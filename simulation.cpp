@@ -59,9 +59,7 @@ void Simulation::initializeVelocities() {
   m_velocities.x = randGaussian();
   m_velocities.y = randGaussian();
   m_velocities.z = randGaussian();
-  // use veloctity-rescaling
-  const double Ek_tilde = 0.5 * 3 * 1 / beta();
-  const double alpha = std::sqrt(Ek_tilde / kineticEnergy());
+  const double alpha = std::sqrt(1 / (beta() * m_mass));
   m_velocities.x *= alpha;
   m_velocities.y *= alpha;
   m_velocities.z *= alpha;
@@ -135,21 +133,24 @@ public:
     m_kineticEnergy(0),
     m_potentialEnergy(0) {
     m_ofs_trajectory.open(outputname.c_str());
-    m_ofs_trajectory << "# x y z v_x v_y v_z f_x f_y f_z Ek\n";
+    m_ofs_trajectory << "# x y z v_x v_y v_z f_x f_y f_z Ek Ep\n";
   }
   void recordForces(const double3& f) {m_forces = f;}
   void recordVelocities(const double3& v) {m_velocities = v;}
   void recordPositions(const double3& r) {m_positions = r;}
   void recordKineticEnergy(const double& Ek) {m_kineticEnergy = Ek;}
-//   void recordPotentialEnergy(const double& Ep) {m_potentialEnergy = Ep;}
+  void recordPotentialEnergy() {
+    m_potentialEnergy = getPotential(m_positions.x, m_positions.y, m_positions.z);
+  }
   void report() {
+    recordPotentialEnergy();
     m_ofs_trajectory << fmt::format(" {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
                                     " {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
-                                    " {:15.10f} {:15.10f}\n",
+                                    " {:15.10f} {:15.10f} {:15.10f}\n",
                                     m_positions.x, m_positions.y, m_positions.z,
                                     m_velocities.x, m_velocities.y, m_velocities.z,
                                     m_forces.x, m_forces.y, m_forces.z,
-                                    m_kineticEnergy);
+                                    m_kineticEnergy, m_potentialEnergy);
   }
 };
 
@@ -163,10 +164,7 @@ double3 forcesFromPositions(double3 pos) {
   } else if (pos.x > 9.5) {
     f.x = -1.0 * spring_constant * (pos.x - 9.5);
   } else {
-    // NOTE: gradients are from MTD hills Vb(x), and
-    //       since V(X) = -Vb(X) and F(X) = -dV(X)/dX,
-    //       F(X) = dVb(X)/dX, multiplying -1.0 is not required.
-    f.x = grad[0];
+    f.x = -1.0 * grad[0];
   }
   // boundary y
   if (pos.y < -9.5) {
@@ -174,10 +172,7 @@ double3 forcesFromPositions(double3 pos) {
   } else if (pos.y > 9.5) {
     f.y = -1.0 * spring_constant * (pos.y - 9.5);
   } else {
-    // NOTE: gradients are from MTD hills Vb(x), and
-    //       since V(X) = -Vb(X) and F(X) = -dV(X)/dX,
-    //       F(X) = dVb(X)/dX, multiplying -1.0 is not required.
-    f.y = grad[1];
+    f.y = -1.0 * grad[1];
   }
   return f;
 }

@@ -117,7 +117,8 @@ public:
 //         const double E = Vmax;
         if (potential < E) {
             for (auto& i : grad) {
-                i *= (1.0 - k * (E - potential));
+                // multiply -1.0 to force
+                i *= -1.0 * (1.0 - k * (E - potential));
             }
         } else {
             bias_potential = 0;

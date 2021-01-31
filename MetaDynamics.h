@@ -64,13 +64,16 @@ double Hill::hillEnergy(const vector<double>& pos, const vector<Axis>& axes) con
 }
 
 vector<double> Hill::hillGradients(const vector<double>& pos, const vector<Axis>& axes) const {
-    vector<double> gradients(pos.size());
-    for (size_t i_cv = 0; i_cv < mCenters.size(); ++i_cv) {
-        const double dist = axes[i_cv].distance(pos[i_cv], mCenters[i_cv]);
-        const double factor = -1.0 * hillEnergy(pos, axes) / (mSigmas[i_cv] * mSigmas[i_cv]);
-        gradients[i_cv] = dist * factor;
-    }
-    return gradients;
+  vector<double> gradients(pos.size());
+  for (size_t i_cv = 0; i_cv < mCenters.size(); ++i_cv) {
+    // incidentally mistake and I fixed it in other places...
+    // this is actually the negative gradient
+    // axes[i_cv].distance(pos[i_cv], mCenters[i_cv]) = mCenters[i_cv] - pos[i_cv]
+    const double dist = axes[i_cv].distance(mCenters[i_cv], pos[i_cv]);
+    const double factor = -1.0 * hillEnergy(pos, axes) / (mSigmas[i_cv] * mSigmas[i_cv]);
+    gradients[i_cv] = dist * factor;
+  }
+  return gradients;
 }
 
 void Hill::hillGradients(const vector<double>& pos, const vector<Axis>& axes, vector<double>& gradients, bool clear_init_gradients) const {
@@ -79,7 +82,7 @@ void Hill::hillGradients(const vector<double>& pos, const vector<Axis>& axes, ve
         gradients.assign(pos.size(), 0);
     }
     for (size_t i_cv = 0; i_cv < mCenters.size(); ++i_cv) {
-        const double dist = axes[i_cv].distance(pos[i_cv], mCenters[i_cv]);
+        const double dist = axes[i_cv].distance(mCenters[i_cv], pos[i_cv]);
         const double factor = -1.0 * hillEnergy(pos, axes) / (mSigmas[i_cv] * mSigmas[i_cv]);
         gradients[i_cv] += dist * factor;
         if (std::isnan(gradients[i_cv])) {
@@ -241,7 +244,7 @@ void MetaDynamics::writeGradients(const string& filename) const {
         }
         computeEnergyGradients(pos, potential, grads);
         for (size_t j = 0; j < mNDim; ++j) {
-            ofs_histo << -1.0 * grads[j] << ' ';
+            ofs_histo << grads[j] << ' ';
         }
         ofs_histo << '\n';
     }
