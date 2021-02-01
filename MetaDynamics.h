@@ -34,7 +34,7 @@ public:
     double mHeight;
 };
 
-class MetaDynamics : public HistogramValue
+class MetaDynamics : public HistogramScalar
 {
 public:
     MetaDynamics() {}

@@ -38,7 +38,7 @@ void Simulation::runLangevinDynamics(
     m_velocities.y += 0.5 * timestep * force.y / m_mass;
     m_velocities.z += 0.5 * timestep * force.z / m_mass;
     // update x_{i+1/2}
-    m_positions.x += 0.5 * m_velocities.x * timestep; 
+    m_positions.x += 0.5 * m_velocities.x * timestep;
     m_positions.y += 0.5 * m_velocities.y * timestep;
     m_positions.z += 0.5 * m_velocities.z * timestep;
     // Langevin thermostat, full step
@@ -46,7 +46,7 @@ void Simulation::runLangevinDynamics(
     m_velocities.y = factor1 * m_velocities.y + factor2 * randGaussian();
     m_velocities.z = factor1 * m_velocities.z + factor2 * randGaussian();
     // update x_{i+1}
-    m_positions.x += 0.5 * m_velocities.x * timestep; 
+    m_positions.x += 0.5 * m_velocities.x * timestep;
     m_positions.y += 0.5 * m_velocities.y * timestep;
     m_positions.z += 0.5 * m_velocities.z * timestep;
     positionCallback(m_positions);

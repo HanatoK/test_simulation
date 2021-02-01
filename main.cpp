@@ -12,4 +12,4 @@ int main() {
     [&](const double& Ek){reporter.recordKineticEnergy(Ek);},
     [&](){reporter.report();});
   return 0;
-} 
+}

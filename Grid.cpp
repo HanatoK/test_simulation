@@ -75,7 +75,7 @@ vector<Axis> HistogramBase::getAxes() const {
     return mAxes;
 }
 
-vector<vector<double>> HistogramBase::getTable() const {
+const vector<vector<double>>& HistogramBase::getTable() const {
     return mPointTable;
 }
 
@@ -87,11 +87,11 @@ size_t HistogramBase::getDimension() const {
     return mNDim;
 }
 
-HistogramValue::HistogramValue(const vector<Axis>& ax): HistogramBase(ax) {
+HistogramScalar::HistogramScalar(const vector<Axis>& ax): HistogramBase(ax) {
     mValue.assign(mGridSize, 0.0);
 }
 
-bool HistogramValue::set(const vector<double>& pos, double value) {
+bool HistogramScalar::set(const vector<double>& pos, double value) {
     size_t addr = 0;
     bool inGrid = address(pos, addr);
     if (inGrid) {
@@ -100,11 +100,20 @@ bool HistogramValue::set(const vector<double>& pos, double value) {
     return inGrid;
 }
 
-void HistogramValue::fill(double value) {
+bool HistogramScalar::add(const vector<double>& pos, double value) {
+  size_t addr = 0;
+  bool inGrid = address(pos, addr);
+  if (inGrid) {
+    mValue[addr] += value;
+  }
+  return inGrid;
+}
+
+void HistogramScalar::fill(double value) {
     mValue.assign(mGridSize, value);
 }
 
-bool HistogramValue::get(const vector<double>& pos, double& value) const {
+bool HistogramScalar::get(const vector<double>& pos, double& value) const {
     size_t addr = 0;
     bool inGrid = address(pos, addr);
     if (inGrid) {
@@ -113,7 +122,7 @@ bool HistogramValue::get(const vector<double>& pos, double& value) const {
     return inGrid;
 }
 
-void HistogramValue::writeToFile(const string& filename) const {
+void HistogramScalar::writeToFile(const string& filename) const {
     ofstream ofs_histo(filename.c_str());
     vector<double> pos(mNDim, 0.0);
     double val = 0;
@@ -134,7 +143,7 @@ void HistogramValue::writeToFile(const string& filename) const {
     }
 }
 
-void HistogramValue::readFromFile(const string& filename) {
+void HistogramScalar::readFromFile(const string& filename) {
     ifstream ifs_histo(filename.c_str());
     string line;
     string token{" "};
@@ -210,7 +219,7 @@ void HistogramValue::readFromFile(const string& filename) {
     }
 }
 
-void HistogramValue::dump() const {
+void HistogramScalar::dump() const {
     using std::cout;
     std::ios_base::fmtflags f(cout.flags());
     vector<double> pos(mNDim, 0.0);
@@ -232,40 +241,36 @@ void HistogramValue::dump() const {
     cout.flags(f);
 }
 
-HistogramValue minus(const HistogramValue& h1, const HistogramValue& h2) {
-    HistogramValue h3(h1.mAxes);
+HistogramScalar minus(const HistogramScalar& h1, const HistogramScalar& h2) {
+    HistogramScalar h3(h1.mAxes);
     // Assume h1 and h2 have the same axes.
-    #pragma omp parallel for
     for (size_t i = 0; i < h3.mGridSize; ++i) {
         h3.mValue[i] = h1.mValue[i] - h2.mValue[i];
     }
     return h3;
 }
 
-HistogramValue multiply(const HistogramValue& h1, const HistogramValue& h2) {
-    HistogramValue h3(h1.mAxes);
+HistogramScalar multiply(const HistogramScalar& h1, const HistogramScalar& h2) {
+    HistogramScalar h3(h1.mAxes);
     // Assume h1 and h2 have the same axes.
-    #pragma omp parallel for
     for (size_t i = 0; i < h3.mGridSize; ++i) {
         h3.mValue[i] = h1.mValue[i] * h2.mValue[i];
     }
     return h3;
 }
 
-HistogramValue add(const HistogramValue& h1, const HistogramValue& h2) {
-    HistogramValue h3(h1.mAxes);
+HistogramScalar add(const HistogramScalar& h1, const HistogramScalar& h2) {
+    HistogramScalar h3(h1.mAxes);
     // Assume h1 and h2 have the same axes.
-    #pragma omp parallel for
     for (size_t i = 0; i < h3.mGridSize; ++i) {
         h3.mValue[i] = h1.mValue[i] + h2.mValue[i];
     }
     return h3;
 }
 
-HistogramValue divide(const HistogramValue& h1, const HistogramValue& h2) {
-    HistogramValue h3(h1.mAxes);
+HistogramScalar divide(const HistogramScalar& h1, const HistogramScalar& h2) {
+    HistogramScalar h3(h1.mAxes);
     // Assume h1 and h2 have the same axes.
-    #pragma omp parallel for
     for (size_t i = 0; i < h3.mGridSize; ++i) {
         if (h2.mValue[i] != 0) {
             h3.mValue[i] = h1.mValue[i] / h2.mValue[i];
@@ -274,62 +279,62 @@ HistogramValue divide(const HistogramValue& h1, const HistogramValue& h2) {
     return h3;
 }
 
-HistogramValue operator+(const HistogramValue& h1, const HistogramValue& h2) {
+HistogramScalar operator+(const HistogramScalar& h1, const HistogramScalar& h2) {
     return add(h1, h2);
 }
 
-HistogramValue operator-(const HistogramValue& h1, const HistogramValue& h2) {
+HistogramScalar operator-(const HistogramScalar& h1, const HistogramScalar& h2) {
     return minus(h1, h2);
 }
 
-HistogramValue operator*(const HistogramValue& h1, const HistogramValue& h2) {
+HistogramScalar operator*(const HistogramScalar& h1, const HistogramScalar& h2) {
     return multiply(h1, h2);
 }
 
-HistogramValue operator*(double x, const HistogramValue& h2) {
-    HistogramValue h3(h2.mAxes);
+HistogramScalar operator*(double x, const HistogramScalar& h2) {
+    HistogramScalar h3(h2.mAxes);
     for (size_t i = 0; i < h3.mGridSize; ++i) {
         h3.mValue[i] = x * h2.mValue[i];
     }
     return h3;
 }
 
-HistogramValue operator*(const HistogramValue& h1, double x) {
+HistogramScalar operator*(const HistogramScalar& h1, double x) {
     return x * h1;
 }
 
-HistogramValue operator/(const HistogramValue& h1, const HistogramValue& h2) {
+HistogramScalar operator/(const HistogramScalar& h1, const HistogramScalar& h2) {
     return divide(h1, h2);
 }
 
-void HistogramValue::applyFunction(std::function<double(double)> f) {
+void HistogramScalar::applyFunction(std::function<double(double)> f) {
     for (auto it = mValue.begin(); it != mValue.end(); ++it) {
         (*it) = f(*it);
     }
 }
 
-vector<double>& HistogramValue::getRawData() {
+vector<double>& HistogramScalar::getRawData() {
     return mValue;
 }
 
-const vector<double>& HistogramValue::getRawData() const {
+const vector<double>& HistogramScalar::getRawData() const {
     const vector<double>& ret = mValue;
     return ret;
 }
 
-void HistogramValue::normalize() {
+void HistogramScalar::normalize() {
     double factor = std::accumulate(mValue.begin(), mValue.end(), 0.0);
     if (factor > 0) {
         applyFunction([factor](double x){return x / factor;});
     }
 }
 
-HistogramValue HistogramValue::reduceDimension(const vector<size_t> new_dims) const {
+HistogramScalar HistogramScalar::reduceDimension(const vector<size_t> new_dims) const {
     vector<Axis> new_ax;
     for (size_t i = 0; i < new_dims.size(); ++i) {
         new_ax.push_back(mAxes.at(new_dims[i]));
     }
-    HistogramValue new_hist(new_ax);
+    HistogramScalar new_hist(new_ax);
     vector<double> pos(mNDim, 0.0);
     vector<double> new_pos(new_hist.getDimension(), 0.0);
     for (size_t i = 0; i < mGridSize; ++i) {
@@ -346,4 +351,155 @@ HistogramValue HistogramValue::reduceDimension(const vector<size_t> new_dims) co
         new_hist.set(new_pos, new_val + val);
     }
     return new_hist;
+}
+
+HistogramVector::HistogramVector(const vector<Axis>& ax,
+                                 const size_t multiplicity):
+  HistogramBase(ax), mMultiplicity(multiplicity) {
+  mValue.assign(mGridSize * mMultiplicity, 0.0);
+}
+
+bool HistogramVector::set(const vector<double>& pos, const vector<double>& value) {
+  size_t addr = 0;
+  bool inGrid = address(pos, addr);
+  if (inGrid) {
+    for (size_t i = 0; i < mMultiplicity; ++i) {
+      mValue[addr*mMultiplicity+i] = value[i];
+    }
+  }
+  return inGrid;
+}
+
+bool HistogramVector::get(const vector<double>& pos, vector<double>& value) const {
+  size_t addr = 0;
+  bool inGrid = address(pos, addr);
+  if (inGrid) {
+    for (size_t i = 0; i < mMultiplicity; ++i) {
+      value[i] = mValue[addr*mMultiplicity+i];
+    }
+  }
+  return inGrid;
+}
+
+bool HistogramVector::add(const vector<double>& pos, const vector<double>& value) {
+  size_t addr = 0;
+  bool inGrid = address(pos, addr);
+  if (inGrid) {
+    for (size_t i = 0; i < mMultiplicity; ++i) {
+      mValue[addr*mMultiplicity+i] += value[i];
+    }
+  }
+  return inGrid;
+}
+
+void HistogramVector::writeToFile(const string& filename) const {
+  ofstream ofs_histo(filename.c_str());
+  vector<double> pos(mNDim, 0.0);
+  vector<double> val(mMultiplicity);
+  ofs_histo << "# " << mNDim << '\n';
+  for (size_t j = 0; j < mNDim; ++j) {
+    ofs_histo << mAxes[j].infoHeader() << '\n';
+  }
+  ofs_histo.setf(std::ios::fixed);
+  ofs_histo << std::setprecision(7);
+  for (size_t i = 0; i < mGridSize; ++i) {
+    for (size_t j = 0; j < mNDim; ++j) {
+      pos[j] = mPointTable[j][i];
+      ofs_histo << pos[j] << ' ';
+    }
+    get(pos, val);
+    for (size_t k = 0; k < mMultiplicity; ++k) {
+      ofs_histo << val[k] << ' ';
+    }
+    ofs_histo << '\n';
+  }
+}
+
+void HistogramVector::readFromFile(const string& filename) {
+  ifstream ifs_histo(filename.c_str());
+  string line;
+  string token{" "};
+  vector<string> fields;
+  // Parse first line
+  std::getline(ifs_histo, line);
+  splitString(line, token, fields);
+  if (fields[0].compare("#") != 0) {
+    std::cerr << "Histogram file reads error!" << std::endl;
+    std::abort();
+  } else {
+    mNDim = std::stoul(fields[1]);
+  }
+  fields.clear();
+  // Parse axes
+  mAxes.clear();
+  mAxes.resize(mNDim);
+  for (size_t i = 0; i < mNDim; ++i) {
+    std::getline(ifs_histo, line);
+    splitString(line, token, fields);
+    double lower, width, upper;
+    size_t bins;
+    bool periodic = false;
+    if (fields[0].compare("#") != 0) {
+      std::cerr << "Histogram file reads error!" << std::endl;
+      std::abort();
+    } else {
+      lower = std::stod(fields[1]);
+      width = std::stod(fields[2]);
+      bins = std::stoul(fields[3]);
+      int p = std::stoi(fields[4]);
+      upper = lower + double(bins) * width;
+      periodic = (p != 0) ? true : false;
+      mAxes[i] = Axis(lower, upper, bins, periodic);
+    }
+    fields.clear();
+  }
+  // Initialize mAccu
+  mAccu.resize(mNDim);
+  mAccu[0] = 1;
+  mGridSize = 1;
+  for (size_t i = 0; i < mNDim; ++i) {
+    mAccu[i] = (i == 0) ? 1 : (mAccu[i - 1] * mAxes[i - 1].bin());
+    mGridSize *= mAxes[i].bin();
+  }
+  // Initialize table
+  fillTable();
+  vector<double> pos(mNDim, 0);
+  size_t data_count = 0;
+  bool first_time = true;
+  while(std::getline(ifs_histo, line)) {
+    splitString(line, token, fields);
+    if (fields.empty()) {
+      continue;
+    }
+    if (fields[0].compare("#") != 0) {
+      if (first_time) {
+        mMultiplicity = fields.size() - mNDim;
+        std::cout << "Read a histogram with multiplicity " << mMultiplicity << std::endl;
+        mValue.assign(mGridSize * mMultiplicity, 0.0);
+        first_time = false;
+      }
+      vector<double> value;
+      for (size_t j = 0; j < mNDim; ++j) {
+        pos[j] = std::stod(fields[j]);
+      }
+      for (size_t j = mNDim - 1; j < fields.size(); ++j) {
+        value[j] = stod(fields[j]);
+      }
+      set(pos, value);
+      ++data_count;
+      fields.clear();
+    }
+  }
+  if (data_count != mGridSize) {
+    std::cerr << "Histogram file reads error!" << std::endl;
+  }
+}
+
+vector<double>& HistogramVector::getRawData() {
+    return mValue;
+}
+
+const vector<double>& HistogramVector::getRawData() const {
+    const vector<double>& ret = mValue;
+    return ret;
 }

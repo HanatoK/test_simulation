@@ -72,7 +72,7 @@ void Hill::debugOutput(ostream& os) const {
     os.flags(f);
 }
 
-MetaDynamics::MetaDynamics(const vector<Axis>& ax) : HistogramValue(ax), mHills(0) {}
+MetaDynamics::MetaDynamics(const vector<Axis>& ax) : HistogramScalar(ax), mHills(0) {}
 
 void MetaDynamics::addHill(const Hill& hill) {
     mHills.push_back(hill);

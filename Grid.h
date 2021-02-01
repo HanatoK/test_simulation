@@ -29,7 +29,7 @@ public:
     bool index(const vector<double>& pos, vector<size_t>& idx) const;
     bool address(const vector<double>& pos, size_t& addr) const;
     vector<Axis> getAxes() const;
-    vector<vector<double>> getTable() const;
+    const vector<vector<double>>& getTable() const;
     double getGridSize() const;
     size_t getDimension() const;
 protected:
@@ -42,25 +42,25 @@ protected:
     void fillTable();
 };
 
-class HistogramValue: public HistogramBase
-{
+class HistogramScalar: public HistogramBase {
 public:
-    HistogramValue() {}
-    HistogramValue(const vector<Axis>& ax);
-    virtual ~HistogramValue() {};
+    HistogramScalar() {}
+    HistogramScalar(const vector<Axis>& ax);
+    virtual ~HistogramScalar() {}
     virtual bool set(const vector<double>& pos, double value = 1.0);
     virtual void fill(double value);
     virtual bool get(const vector<double>& pos, double& value) const;
-    friend HistogramValue multiply(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue add(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue minus(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue divide(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue operator+(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue operator-(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue operator*(const HistogramValue& h1, const HistogramValue& h2);
-    friend HistogramValue operator*(double x, const HistogramValue& h2);
-    friend HistogramValue operator*(const HistogramValue& h1, double x);
-    friend HistogramValue operator/(const HistogramValue& h1, const HistogramValue& h2);
+    virtual bool add(const vector<double>& pos, double value);
+    friend HistogramScalar multiply(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar add(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar minus(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar divide(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar operator+(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar operator-(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar operator*(const HistogramScalar& h1, const HistogramScalar& h2);
+    friend HistogramScalar operator*(double x, const HistogramScalar& h2);
+    friend HistogramScalar operator*(const HistogramScalar& h1, double x);
+    friend HistogramScalar operator/(const HistogramScalar& h1, const HistogramScalar& h2);
     void applyFunction(std::function<double(double)> f);
     vector<double>& getRawData();
     const vector<double>& getRawData() const;
@@ -68,9 +68,26 @@ public:
     virtual void readFromFile(const string& filename);
     void dump() const;
     void normalize();
-    virtual HistogramValue reduceDimension(const vector<size_t> dims) const;
+    virtual HistogramScalar reduceDimension(const vector<size_t> dims) const;
 protected:
     vector<double>          mValue;
+};
+
+class HistogramVector: public HistogramBase {
+public:
+  HistogramVector() {}
+  HistogramVector(const vector<Axis>& ax, const size_t multiplicity);
+  virtual ~HistogramVector() {}
+  virtual bool set(const vector<double>& pos, const vector<double>& value);
+  virtual bool get(const vector<double>& pos, vector<double>& value) const;
+  virtual bool add(const vector<double>& pos, const vector<double>& value);
+  virtual void writeToFile(const string& filename) const;
+  virtual void readFromFile(const string& filename);
+  vector<double>& getRawData();
+  const vector<double>& getRawData() const;
+protected:
+  size_t                  mMultiplicity;
+  vector<double>          mValue;
 };
 
 #endif
