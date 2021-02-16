@@ -53,7 +53,7 @@ private:
   HistogramScalar         m_mtd_sum_hills;
   HistogramScalar         m_count;
   // CZAR estimator
-  HistogramScalar         m_zcount;
+  CZARCount               m_zcount;
   HistogramVector         m_zgrad;
   double3 updateForce(const double3& position);
   double3 biasForce(const double3& position);

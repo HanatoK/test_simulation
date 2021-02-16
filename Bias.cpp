@@ -195,5 +195,27 @@ void BiasWTMeABF2D::writeOutput(const string& filename) const {
   m_zcount.writeToFile(filename + ".zcount");
   m_mtd_sum_hills.writeToFile(filename + ".mtd");
   m_bias_abf.writeToFile(filename + ".abf.grad");
-  // TODO: take the derivative of the histogram
+  m_zgrad.writeToFile(filename + ".zgrad");
+  // write CZAR gradients
+  const string czar_grad_filename = filename + ".czar.grad";
+  std::ofstream ofs_czar_grad(czar_grad_filename.c_str());
+  const vector<vector<double>>& point_table = m_zgrad.getTable();
+  const vector<double>& zgrad_data = m_zgrad.getRawData();
+  const size_t N = 2;
+  vector<double> grid_pos(N);
+  for (size_t i = 0; i < point_table[0].size(); ++i) {
+    for (size_t j = 0; j < point_table.size(); ++j) {
+      grid_pos[j] = point_table[j][i];
+      ofs_czar_grad << fmt::format(" {:15.10f}", grid_pos[j]);
+    }
+    size_t addr = 0;
+    m_zgrad.address(grid_pos, addr);
+    const vector<double> log_deriv = m_zcount.getLogDerivative(grid_pos);
+    // merge gradients
+    for (size_t j = 0; j < grid_pos.size(); ++j) {
+      const double grad_value = -1.0 / beta() * log_deriv[j] + zgrad_data[addr + j];
+      ofs_czar_grad << fmt::format(" {:15.10f}", grad_value);
+    }
+    ofs_czar_grad << '\n';
+  }
 }
