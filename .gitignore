@@ -1,0 +1,4 @@
+*.traj
+a.out
+*.png
+*/a.out

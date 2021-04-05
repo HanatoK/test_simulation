@@ -35,15 +35,15 @@ public:
         vector<Axis> ax{phi_ax, psi_ax};
         meta = MetaDynamics(ax);
         vector<Hill> hills;
-        hills.push_back(Hill({6, 6}, {2, 2}, -3.5));
-        hills.push_back(Hill({-4, -6}, {2, 2}, -5));
-        hills.push_back(Hill({-9, 9}, {2.5, 2.5}, 12));
-        hills.push_back(Hill({-5, 5}, {4, 4}, 4));
-        hills.push_back(Hill({-5, 3}, {4, 6}, 4));
-        hills.push_back(Hill({9.5, -9.5}, {3, 3}, 10));
-        hills.push_back(Hill({4, -4}, {5, 5}, 7));
-        hills.push_back(Hill({2, -2}, {4, 4}, 4));
-        hills.push_back(Hill({0, 0}, {3, 3}, 3));
+        hills.push_back(Hill({6, 6}, {2, 2}, 1.5));
+//         hills.push_back(Hill({-4, -6}, {2, 2}, -5));
+        hills.push_back(Hill({-9, 9}, {2.5, 2.5}, 17));
+        hills.push_back(Hill({-5, 5}, {4, 4}, 9));
+        hills.push_back(Hill({-5, 3}, {4, 6}, 9));
+        hills.push_back(Hill({9.5, -9.5}, {3, 3}, 15));
+        hills.push_back(Hill({4, -4}, {5, 5}, 12));
+        hills.push_back(Hill({2, -2}, {4, 4}, 9));
+        hills.push_back(Hill({0, 0}, {3, 3}, 8));
         for (const auto& h : hills) {
             meta.addHill(h);
         }
