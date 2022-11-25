@@ -5,6 +5,7 @@
 #include <functional>
 #include <random>
 #include <iostream>
+#include <fstream>
 #include <fmt/format.h>
 
 // simulation of a single atom
@@ -48,6 +49,8 @@ public:
     std::function<void(double3&)> velocityCallback,
     std::function<void(double3&)> positionCallback,
     std::function<void(double&)> kineticEnergyCallback,
+    std::function<void(double&)> potentialEnergyCallback,
+    std::function<void(int64_t)> stepCallback,
     std::function<void()> runCallback);
   // allow anisotropic diffusivities
   void runLangevinDynamics(
@@ -59,6 +62,8 @@ public:
     std::function<void(double3&)> velocityCallback,
     std::function<void(double3&)> positionCallback,
     std::function<void(double&)> kineticEnergyCallback,
+    std::function<void(double&)> potentialEnergyCallback,
+    std::function<void(int64_t)> stepCallback,
     std::function<void()> runCallback);
 };
 
@@ -69,31 +74,36 @@ private:
   double3 m_positions;
   double m_kineticEnergy;
   double m_potentialEnergy;
+  int64_t m_stride;
+  int64_t m_step;
   std::ofstream m_ofs_trajectory;
 public:
-  Reporter(const std::string& outputname):
+  Reporter(int64_t stride, const std::string& outputname):
     m_forces{0, 0, 0},
     m_velocities{0, 0, 0},
     m_positions{0, 0, 0},
     m_kineticEnergy(0),
-    m_potentialEnergy(0) {
+    m_potentialEnergy(0),
+    m_stride(stride),
+    m_step(0) {
     m_ofs_trajectory.open(outputname.c_str());
-    m_ofs_trajectory << "# x y z v_x v_y v_z f_x f_y f_z Ek Ep\n";
+    m_ofs_trajectory << "# step x y z v_x v_y v_z f_x f_y f_z Ek Ep\n";
   }
   void recordForces(const double3& f) {m_forces = f;}
   void recordVelocities(const double3& v) {m_velocities = v;}
   void recordPositions(const double3& r) {m_positions = r;}
   void recordKineticEnergy(const double& Ek) {m_kineticEnergy = Ek;}
   void recordPotentialEnergy(const double& Ep) {m_potentialEnergy = Ep;}
+  void recordStep(const int64_t& step) {m_step = step;}
   void report() {
-    recordPotentialEnergy();
-    m_ofs_trajectory << fmt::format(" {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
-                                    " {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
-                                    " {:15.10f} {:15.10f} {:15.10f}\n",
-                                    m_positions.x, m_positions.y, m_positions.z,
-                                    m_velocities.x, m_velocities.y, m_velocities.z,
-                                    m_forces.x, m_forces.y, m_forces.z,
-                                    m_kineticEnergy, m_potentialEnergy);
+    if (m_step % m_stride == 0)
+      m_ofs_trajectory << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
+                                      " {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
+                                      " {:15.10f} {:15.10f} {:15.10f}\n", m_step,
+                                      m_positions.x, m_positions.y, m_positions.z,
+                                      m_velocities.x, m_velocities.y, m_velocities.z,
+                                      m_forces.x, m_forces.y, m_forces.z,
+                                      m_kineticEnergy, m_potentialEnergy);
   }
 };
 

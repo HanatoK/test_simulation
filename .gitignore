@@ -2,3 +2,4 @@
 a.out
 *.png
 */a.out
+build/

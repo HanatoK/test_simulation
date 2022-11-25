@@ -1,0 +1,3 @@
+[submodule "scripts/histogram"]
+	path = scripts/histogram
+	url = https://github.com/HanatoK/Histogram-python.git

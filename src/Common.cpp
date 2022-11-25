@@ -1,4 +1,6 @@
-#include "Tools.h"
+#include "Common.h"
+
+const double boltzmann_constant = 0.001985875;
 
 void splitString(const std::string& data, const std::string& delim, std::vector<std::string>& dest) {
     size_t index = 0, new_index = 0;

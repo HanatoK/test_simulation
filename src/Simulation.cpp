@@ -20,19 +20,20 @@ void Simulation::runLangevinDynamics(
   std::function<void(double3&)> positionCallback,
   std::function<void(double&)> kineticEnergyCallback,
   std::function<void(double&)> potentialEnergyCallback,
+  std::function<void(int64_t)> stepCallback,
   std::function<void()> runCallback) {
   double3 frictions = {friction, friction, friction};
   runLangevinDynamics(
-    int64_t steps, const double timestep,
-    const double3& frictions,
-    std::function<double3(double3)> forceFunction,
-    std::function<double(double3)> potentialFunction,
-    std::function<void(double3&)> forceCallback,
-    std::function<void(double3&)> velocityCallback,
-    std::function<void(double3&)> positionCallback,
-    std::function<void(double&)> kineticEnergyCallback,
-    std::function<void(double&)> potentialEnergyCallback,
-    std::function<void()> runCallback);
+    steps, timestep, frictions,
+    forceFunction,
+    potentialFunction,
+    forceCallback,
+    velocityCallback,
+    positionCallback,
+    kineticEnergyCallback,
+    potentialEnergyCallback,
+    stepCallback,
+    runCallback);
 }
 
 void Simulation::runLangevinDynamics(
@@ -45,16 +46,16 @@ void Simulation::runLangevinDynamics(
   std::function<void(double3&)> positionCallback,
   std::function<void(double&)> kineticEnergyCallback,
   std::function<void(double&)> potentialEnergyCallback,
+  std::function<void(int64_t)> stepCallback,
   std::function<void()> runCallback) {
   double3 force = forceFunction(m_positions);
   positionCallback(m_positions);
   double Ek = kineticEnergy();
   kineticEnergyCallback(Ek);
-  double Ep = potentialEnergy();
+  double Ep = potentialFunction(m_positions);
   potentialEnergyCallback(Ep);
   forceCallback(force);
   velocityCallback(m_velocities);
-  runCallback();
   const double factor1x = std::exp(-1.0 * frictions.x * timestep);
   const double factor1y = std::exp(-1.0 * frictions.y * timestep);
   const double factor1z = std::exp(-1.0 * frictions.z * timestep);
@@ -64,8 +65,10 @@ void Simulation::runLangevinDynamics(
                          std::sqrt(1.0 - std::exp(-2.0 * frictions.y * timestep));
   const double factor2z = std::sqrt(1.0 / (beta() * m_mass)) *
                          std::sqrt(1.0 - std::exp(-2.0 * frictions.z * timestep));
+  runCallback();
   // BAOAB
-  for (int64_t i = 0; i < steps; ++i) {
+  for (int64_t i = 0; i <= steps; ++i) {
+    stepCallback(i);
     // update v_{i+1/2}
     m_velocities.x += 0.5 * timestep * force.x / m_mass;
     m_velocities.y += 0.5 * timestep * force.y / m_mass;
@@ -85,7 +88,7 @@ void Simulation::runLangevinDynamics(
     positionCallback(m_positions);
     Ek = kineticEnergy();
     kineticEnergyCallback(Ek);
-    Ep = potentialEnergy();
+    Ep = potentialFunction(m_positions);
     potentialEnergyCallback(Ep);
     // update f_{i+1}
     force = forceFunction(m_positions);
