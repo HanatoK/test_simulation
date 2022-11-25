@@ -1,19 +1,11 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
-#include "Potential.h"
+#include "Common.h"
 #include <functional>
 #include <random>
 #include <iostream>
 #include <fmt/format.h>
-
-extern const double boltzmann_constant;
-
-struct double3 {
-  double x;
-  double y;
-  double z;
-}; 
 
 // simulation of a single atom
 class Simulation {
@@ -49,8 +41,20 @@ public:
   }
   void initializeVelocities();
   void runLangevinDynamics(
-    int64_t steps, const double timestep, double friction,
+    int64_t steps, const double timestep, const double friction,
     std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
+    std::function<void(double3&)> forceCallback,
+    std::function<void(double3&)> velocityCallback,
+    std::function<void(double3&)> positionCallback,
+    std::function<void(double&)> kineticEnergyCallback,
+    std::function<void()> runCallback);
+  // allow anisotropic diffusivities
+  void runLangevinDynamics(
+    int64_t steps, const double timestep,
+    const double3& frictions,
+    std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
     std::function<void(double3&)> forceCallback,
     std::function<void(double3&)> velocityCallback,
     std::function<void(double3&)> positionCallback,
@@ -80,9 +84,7 @@ public:
   void recordVelocities(const double3& v) {m_velocities = v;}
   void recordPositions(const double3& r) {m_positions = r;}
   void recordKineticEnergy(const double& Ek) {m_kineticEnergy = Ek;}
-  void recordPotentialEnergy() {
-    m_potentialEnergy = getPotential(m_positions.x, m_positions.y, m_positions.z);
-  }
+  void recordPotentialEnergy(const double& Ep) {m_potentialEnergy = Ep;}
   void report() {
     recordPotentialEnergy();
     m_ofs_trajectory << fmt::format(" {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
@@ -94,7 +96,5 @@ public:
                                     m_kineticEnergy, m_potentialEnergy);
   }
 };
-
-double3 forcesFromPositions(double3 pos);
 
 #endif // SIMULATION_H
