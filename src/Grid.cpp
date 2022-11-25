@@ -1,4 +1,5 @@
 #include "Grid.h"
+#include "Common.h"
 
 HistogramBase::HistogramBase():
 mNDim(0), mAxes(0), mAccu(0), mGridSize(0), mPointTable(0) {}

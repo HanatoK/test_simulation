@@ -1,4 +1,5 @@
-#include "MetaDynamics.h"
+#include "Metadynamics.h"
+#include "Common.h"
 
 Hill::Hill(size_t ndims) {
     init(ndims);
@@ -32,14 +33,34 @@ double Hill::hillEnergy(const vector<double>& pos, const vector<Axis>& axes) con
 vector<double> Hill::hillGradients(const vector<double>& pos, const vector<Axis>& axes) const {
   vector<double> gradients(pos.size());
   for (size_t i_cv = 0; i_cv < mCenters.size(); ++i_cv) {
-    // incidentally mistake and I fixed it in other places...
-    // this is actually the negative gradient
-    // axes[i_cv].distance(pos[i_cv], mCenters[i_cv]) = mCenters[i_cv] - pos[i_cv]
     const double dist = axes[i_cv].distance(mCenters[i_cv], pos[i_cv]);
     const double factor = -1.0 * hillEnergy(pos, axes) / (mSigmas[i_cv] * mSigmas[i_cv]);
     gradients[i_cv] = dist * factor;
   }
   return gradients;
+}
+
+void Hill::hillEnergyGradients(
+    const vector<double>& pos, const vector<Axis>& axes,
+    vector<double>& gradients, double& potential) const {
+    double result = 0;
+    const size_t N = mCenters.size();
+    for (size_t i_cv = 0; i_cv < N; ++i_cv) {
+        const double dist = axes[i_cv].distance(pos[i_cv], mCenters[i_cv]);
+        result += dist * dist / (2.0 * mSigmas[i_cv] * mSigmas[i_cv]);
+        gradients[i_cv] = -1.0 / (mSigmas[i_cv] * mSigmas[i_cv]);
+    }
+    if (result > 20.0) {
+        potential = 0.0;
+        for (size_t i_cv = 0; i_cv < N; ++i_cv) {
+            gradients[i_cv] = 0;
+        }
+    } else {
+        potential = mHeight * std::exp(-result);
+    }
+    for (size_t i_cv = 0; i_cv < N; ++i_cv) {
+        gradients[i_cv] *= potential;
+    }
 }
 
 void Hill::hillGradients(const vector<double>& pos, const vector<Axis>& axes, vector<double>& gradients, bool clear_init_gradients) const {

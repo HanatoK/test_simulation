@@ -2,8 +2,9 @@
 #define BIAS_H
 
 #include "Grid.h"
-#include "Simulation.h"
-#include "MetaDynamics.h"
+#include "Common.h"
+#include "Metadynamics.h"
+#include <random>
 
 using std::random_device;
 using std::mt19937;
@@ -17,19 +18,23 @@ public:
   virtual vector<double> getLogDerivative(const vector<double> &pos) const;
 };
 
+// TODO: new hill frequency
 class BiasWTMeABF2D {
 public:
   BiasWTMeABF2D();
   BiasWTMeABF2D(const vector<Axis>& ax, double fict_mass, double kappa,
                 double temperatue, double friction, double timestep);
   ~BiasWTMeABF2D();
-  void positionCallback(double3& position);
+  void positionCallback(const double3& position);
   void applyBiasForce(double3& force);
   double randGaussian();
   double beta() const;
   void writeOutput(const string& filename) const;
+  void recordStep(const int64_t& step) {m_step = step;}
+  void writeTrajectory(std::ostream& os) const;
 private:
   bool                    m_first_time;
+  int64_t                 m_step;
   // extended variables
   double                  m_mass;
   double3                 m_forces;
@@ -52,6 +57,12 @@ private:
   HistogramVector         m_bias_mtd;
   HistogramScalar         m_mtd_sum_hills;
   HistogramScalar         m_count;
+  double3                 m_bias_force;
+  Hill                    m_tmp_current_hill;
+  std::vector<double>     m_tmp_grid_pos;
+  std::vector<double>     m_tmp_hill_gradient;
+  std::vector<double>     m_tmp_pos;
+  std::vector<double>     m_tmp_system_f;
   // CZAR estimator
   CZARCount               m_zcount;
   HistogramVector         m_zgrad;

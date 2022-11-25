@@ -1,4 +1,5 @@
 #include "Bias.h"
+#include <fmt/format.h>
 
 vector<double> CZARCount::getLogDerivative(const vector<double> &pos) const {
   vector<double> result(mNDim, 0.0);
@@ -59,13 +60,16 @@ BiasWTMeABF2D::BiasWTMeABF2D() {}
 BiasWTMeABF2D::BiasWTMeABF2D(
   const vector<Axis>& ax, double fict_mass, double kappa, double temperatue,
   double friction, double timestep):
-  m_first_time(true), m_mass{fict_mass},
+  m_first_time(true), m_step(0), m_mass{fict_mass},
   m_forces{0, 0, 0}, m_velocities{0, 0, 0}, m_positions{0, 0, 0},
   m_kappa{kappa}, m_temperatue{temperatue}, m_friction{friction},
   m_timestep{timestep}, m_real_positions{0, 0, 0},
   m_random_generator(m_random_device()),
   m_bias_abf(ax, ax.size()), m_bias_mtd(ax, ax.size()),
-  m_mtd_sum_hills(ax), m_count(ax), m_zcount(ax), m_zgrad(ax, ax.size()) {
+  m_mtd_sum_hills(ax), m_count(ax), m_bias_force{0, 0, 0},
+  m_tmp_current_hill(2), m_tmp_grid_pos(2),
+  m_tmp_hill_gradient(2), m_tmp_pos(2), m_tmp_system_f(2),
+  m_zcount(ax), m_zgrad(ax, ax.size()) {
   m_factor1 = std::exp(-1.0 * m_friction * m_timestep);
   m_factor2 = std::sqrt(1.0 / (beta() * m_mass)) *
               std::sqrt(1.0 - std::exp(-2.0 * m_friction * m_timestep));
@@ -87,7 +91,7 @@ void BiasWTMeABF2D::applyBiasForce(double3& force) {
   force.z = m_kappa * (m_positions.z - m_real_positions.z);
 }
 
-void BiasWTMeABF2D::positionCallback(double3& position) {
+void BiasWTMeABF2D::positionCallback(const double3& position) {
   m_real_positions = position;
   if (m_first_time) {
     m_positions = m_real_positions;
@@ -119,53 +123,61 @@ void BiasWTMeABF2D::positionCallback(double3& position) {
   // update f_{i+1}
   m_forces = updateForce(m_positions);
   // apply bias force
-  double3 bias_force = biasForce(m_positions);
-  m_forces.x += bias_force.x;
-  m_forces.y += bias_force.y;
-  m_forces.z += bias_force.z;
+  m_bias_force = biasForce(m_positions);
+  m_forces.x += m_bias_force.x;
+  m_forces.y += m_bias_force.y;
+  m_forces.z += m_bias_force.z;
   // update v_{i+1}
   m_velocities.x += 0.5 * m_timestep * m_forces.x / m_mass;
   m_velocities.y += 0.5 * m_timestep * m_forces.y / m_mass;
   m_velocities.z += 0.5 * m_timestep * m_forces.z / m_mass;
 }
 
+// TODO: tune MTD parameters
 double3 BiasWTMeABF2D::updateForce(const double3& position) {
+  // std::cerr << "Update force" << std::endl;
   double3 force{0, 0, 0};
   force.x = -1.0 * m_kappa * (position.x - m_real_positions.x);
   force.y = -1.0 * m_kappa * (position.y - m_real_positions.y);
   force.z = -1.0 * m_kappa * (position.z - m_real_positions.z);
+  // setup hill
+  m_tmp_pos[0] = position.x;
+  m_tmp_pos[1] = position.y;
+  m_tmp_system_f[0] = force.x;
+  m_tmp_system_f[1] = force.y;
+  m_tmp_current_hill.mCenters[0] = position.x;
+  m_tmp_current_hill.mCenters[1] = position.y;
+  m_tmp_current_hill.mSigmas[0] = 0.1;
+  m_tmp_current_hill.mSigmas[1] = 0.1;
+  m_tmp_current_hill.mHeight = 0.1;
   // store the instantaneous force to ABF
-  const vector<double> tmp_pos{position.x, position.y};
-  const vector<double> tmp_system_f{force.x, force.y};
-  m_bias_abf.add(tmp_pos, tmp_system_f);
-  m_count.add(tmp_pos, 1.0);
-  const Hill h(vector<double>{position.x, position.y},
-               vector<double>{0.1, 0.1}, 0.1);
+  m_bias_abf.add(m_tmp_pos, m_tmp_system_f);
+  m_count.add(m_tmp_pos, 1.0);
   const double bias_temperature = 3000.0;
   const vector<vector<double>>& point_table = m_bias_mtd.getTable();
   // fixed dimensionality
   const size_t N = 2;
-  vector<double> grid_pos(N);
-  vector<double> hill_gradient(N);
   // project hills
   vector<double>& sum_hills_array = m_mtd_sum_hills.getRawData();
   vector<double>& mtd_bias_force_array = m_bias_mtd.getRawData();
+  // TODO: should be parallelized for performance
   for (size_t i = 0; i < point_table[0].size(); ++i) {
     for (size_t j = 0; j < point_table.size(); ++j) {
-      grid_pos[j] = point_table[j][i];
+      m_tmp_grid_pos[j] = point_table[j][i];
     }
     size_t addr = 0;
-    m_mtd_sum_hills.address(grid_pos, addr);
-    double hill_energy = h.hillEnergy(grid_pos, m_bias_mtd.getAxes());
-    hill_gradient = h.hillGradients(grid_pos, m_bias_mtd.getAxes());
+    double hill_energy;
+    m_mtd_sum_hills.address(m_tmp_grid_pos, addr);
+    m_tmp_current_hill.hillEnergyGradients(
+      m_tmp_grid_pos, m_bias_mtd.getAxes(),
+      m_tmp_hill_gradient, hill_energy);
     // well-tempered
     const double previous_Vbias = sum_hills_array[addr];
     const double well_tempered_factor = std::exp(-1.0 * previous_Vbias / (boltzmann_constant * bias_temperature));
     hill_energy *= well_tempered_factor;
     for (size_t i = 0; i < N; ++i) {
-      mtd_bias_force_array[addr + i] += -1.0 * hill_gradient[i] * well_tempered_factor;
+      mtd_bias_force_array[addr + i] += -1.0 * m_tmp_hill_gradient[i] * well_tempered_factor;
     }
-    // Work-in-progress: store sum V and its derivatives
     sum_hills_array[addr] += hill_energy;
   }
   // collect info for CZAR
@@ -173,6 +185,7 @@ double3 BiasWTMeABF2D::updateForce(const double3& position) {
   const vector<double> tmp_real_f{-force.x, -force.y};
   m_zcount.add(tmp_real_pos, 1.0);
   m_zgrad.add(tmp_real_pos, tmp_real_f);
+  // std::cerr << "Update force done" << std::endl;
   return force;
 }
 
@@ -218,4 +231,15 @@ void BiasWTMeABF2D::writeOutput(const string& filename) const {
     }
     ofs_czar_grad << '\n';
   }
+}
+
+void BiasWTMeABF2D::writeTrajectory(std::ostream& os) const {
+  if (m_first_time) {
+    os << "# step x r_x y r_y fb_rx fb_ry\n";
+  }
+  os << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
+                    " {:15.10f} {:15.10f}\n", m_step,
+                    m_real_positions.x, m_real_positions.y,
+                    m_positions.x, m_positions.y,
+                    m_bias_force.x, m_bias_force.y);
 }

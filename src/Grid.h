@@ -12,13 +12,13 @@
 #include <iostream>
 
 #include "Axis.h"
-#include "Tools.h"
+// #include "Common.h"
 
 using std::vector;
 using std::string;
 using std::ofstream;
 using std::ifstream;
-using std::reference_wrapper;
+// using std::reference_wrapper;
 
 class HistogramBase
 {
