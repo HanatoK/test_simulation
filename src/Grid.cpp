@@ -45,6 +45,8 @@ bool HistogramBase::isInGrid(const vector<double>& pos) const {
     auto it_ax = mAxes.cbegin();
     while (it_ax != mAxes.cend()) {
         if (!(it_ax->isInBoundary((*it_val)))) return false;
+        ++it_ax;
+        ++it_val;
     }
     return true;
 }

@@ -22,8 +22,11 @@ public:
 class BiasWTMeABF2D {
 public:
   BiasWTMeABF2D();
-  BiasWTMeABF2D(const vector<Axis>& ax, double fict_mass, double kappa,
-                double temperatue, double friction, double timestep);
+  BiasWTMeABF2D(const vector<Axis>& ax,
+                const vector<Axis>& mtd_ax,
+                double tau, double kappa,
+                double temperatue, double friction, double timestep,
+                const std::string& hill_traj_filename);
   ~BiasWTMeABF2D();
   void positionCallback(const double3& position);
   void applyBiasForce(double3& force);
@@ -32,6 +35,7 @@ public:
   void writeOutput(const string& filename) const;
   void recordStep(const int64_t& step) {m_step = step;}
   void writeTrajectory(std::ostream& os) const;
+  double sumHistoryHillsAtPosition(const std::vector<double>& pos) const;
 private:
   bool                    m_first_time;
   int64_t                 m_step;
@@ -59,6 +63,9 @@ private:
   HistogramScalar         m_count;
   double3                 m_bias_force;
   Hill                    m_tmp_current_hill;
+  int64_t                 m_hill_freq;
+  double                  m_hill_initial_height;
+  std::vector<double>     m_hill_sigma;
   std::vector<double>     m_tmp_grid_pos;
   std::vector<double>     m_tmp_hill_gradient;
   std::vector<double>     m_tmp_pos;
@@ -68,6 +75,11 @@ private:
   HistogramVector         m_zgrad;
   double3 updateForce(const double3& position);
   double3 biasForce(const double3& position);
+  // MTD hill traj
+  std::ofstream           m_hill_traj;
+  std::vector<Hill>       m_history_hills;
+  // restraint
+  double3 restraintForce(const double3& position);
 };
 
 #endif // BIAS_H

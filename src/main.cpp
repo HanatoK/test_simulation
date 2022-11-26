@@ -64,7 +64,8 @@ void UnbiasedSimulations3() {
 void BiasedSimulations1() {
   // setup bias
   std::vector<Axis> ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
-  BiasWTMeABF2D bias(ax, 10.0, 300.0*0.0019872041/(0.05*0.05), 300.0, 10.0, 0.5);
+  std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
+  BiasWTMeABF2D bias(ax, mtd_ax, 100.0, 300.0*0.0019872041/(0.05*0.05), 300.0, 10.0, 0.5, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_10_10_b.traj");
   std::ofstream ofs_bias_traj("bias_10_10.dat");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
@@ -82,13 +83,14 @@ void BiasedSimulations1() {
     [&](double3& f){
       reporter.recordForces(f);
       // apply the biasing force
-      bias.applyBiasForce(f);
+      // bias.applyBiasForce(f);
     },
     [&](const double3& v){reporter.recordVelocities(v);},
     [&](const double3& r){reporter.recordPositions(r);},
     [&](const double& Ek){reporter.recordKineticEnergy(Ek);},
     [&](const double& Ep){reporter.recordPotentialEnergy(Ep);},
     [&](int64_t step){
+      bias.recordStep(step);
       reporter.recordStep(step);
       if (step % 100 == 0) {
         bias.writeTrajectory(ofs_bias_traj);
