@@ -48,7 +48,7 @@ void Hill::hillEnergyGradients(
     for (size_t i_cv = 0; i_cv < N; ++i_cv) {
         const double dist = axes[i_cv].distance(pos[i_cv], mCenters[i_cv]);
         result += dist * dist / (2.0 * mSigmas[i_cv] * mSigmas[i_cv]);
-        gradients[i_cv] = -1.0 / (mSigmas[i_cv] * mSigmas[i_cv]);
+        gradients[i_cv] = -dist / (mSigmas[i_cv] * mSigmas[i_cv]);
     }
     if (result > 20.0) {
         potential = 0.0;

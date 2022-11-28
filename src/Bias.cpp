@@ -80,8 +80,8 @@ BiasWTMeABF2D::BiasWTMeABF2D(
   m_factor1 = std::exp(-1.0 * m_friction * m_timestep);
   m_factor2 = std::sqrt(1.0 / (beta() * m_mass)) *
               std::sqrt(1.0 - std::exp(-2.0 * m_friction * m_timestep));
-  m_hill_sigma[0] = 8.0 * 0.05;
-  m_hill_sigma[1] = 8.0 * 0.05;
+  m_hill_sigma[0] = 5.0 * 0.1;
+  m_hill_sigma[1] = 5.0 * 0.1;
   m_hill_traj.open(hill_traj_filename);
   m_hill_traj << "# step x y sigma_x sigma_y height\n";
 }
@@ -250,7 +250,7 @@ void BiasWTMeABF2D::updateForce() {
         m_tmp_grid_pos, m_bias_mtd.getAxes(),
         m_tmp_hill_gradient, hill_energy);
       for (size_t i = 0; i < point_table.size(); ++i) {
-        mtd_bias_force_array[addr + i] += -1.0 * m_tmp_hill_gradient[i];
+        mtd_bias_force_array[addr * point_table.size() + i] += m_tmp_hill_gradient[i];
       }
       sum_hills_array[addr] += hill_energy;
     }
@@ -264,7 +264,7 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
   vector<double> abf_bias_force(2, 0);
   vector<double> mtd_bias_force(2, 0);
   double count = 0;
-  m_bias_abf.get(tmp_pos, abf_bias_force);
+  // m_bias_abf.get(tmp_pos, abf_bias_force);
   m_bias_mtd.get(tmp_pos, mtd_bias_force);
   m_count.get(tmp_pos, count);
   // abf_bias_force is actually the sum of instantaneous collective force
