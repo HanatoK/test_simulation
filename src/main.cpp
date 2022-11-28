@@ -7,8 +7,7 @@
 
 const double timestep = 0.0005;
 const double mass = 12.0;
-const int64_t total_steps = 200000000;
-
+const int64_t total_steps = 400000000;
 
 void UnbiasedSimulations1() {
   Reporter reporter(100, "XYZ_10_10.traj");
@@ -69,9 +68,9 @@ void UnbiasedSimulations3() {
 
 void BiasedSimulations1() {
   // setup bias
-  std::vector<Axis> ax{Axis(-4, 4, 320), Axis(-4, 4, 320)};
+  std::vector<Axis> ax{Axis(-6, 6, 120), Axis(-6, 6, 120)};
   std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
-  BiasWTMeABF2D bias(ax, mtd_ax, 0.4, 300.0*0.0019872041/(0.05*0.05), 300.0, 10.0, timestep, "bias_10_10.hills");
+  BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.1*0.1), 300.0, 8.0, timestep, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_10_10_b.traj");
   std::ofstream ofs_bias_traj("bias_10_10.dat");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
@@ -93,7 +92,8 @@ void BiasedSimulations1() {
     [&](const double3& r){
       reporter.recordPositions(r);
       // compute and update CVs
-      bias.positionCallback2(r);
+      bias.updateCV(r);
+      bias.updateExtendedLagrangian();
     },
     [&](const double& Ek){reporter.recordKineticEnergy(Ek);},
     [&](const double& Ep){reporter.recordPotentialEnergy(Ep);},
@@ -113,9 +113,9 @@ void BiasedSimulations1() {
 }
 
 int main() {
-  UnbiasedSimulations1();
-  UnbiasedSimulations2();
-  UnbiasedSimulations3();
-  // BiasedSimulations1();
+  // UnbiasedSimulations1();
+  // UnbiasedSimulations2();
+  // UnbiasedSimulations3();
+  BiasedSimulations1();
   return 0;
 }

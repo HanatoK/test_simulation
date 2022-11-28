@@ -99,14 +99,14 @@ double BiasWTMeABF2D::beta() const {
 }
 
 void BiasWTMeABF2D::applyBiasForce(double3& force) {
+  // std::cout << "Apply biasing force at " << m_step << std::endl;
   // apply the biasing force to real position
-  force.x += m_kappa * (m_positions.x - m_real_positions.x);
-  force.y += m_kappa * (m_positions.y - m_real_positions.y);
-  force.z += m_kappa * (m_positions.z - m_real_positions.z);
-  m_forces = updateForce(m_positions);
+  force.x += m_applied_forces.x;
+  force.y += m_applied_forces.y;
+  force.z += m_applied_forces.z;
 }
 
-void BiasWTMeABF2D::positionCallback(const double3& position) {
+void BiasWTMeABF2D::updateCV(const double3& position) {
   m_real_positions = position;
   if (m_first_time) {
     m_positions = m_real_positions;
@@ -118,60 +118,13 @@ void BiasWTMeABF2D::positionCallback(const double3& position) {
     m_velocities.y *= alpha;
     m_velocities.z *= alpha;
     m_first_time = false;
-    m_bias_force = biasForce(m_positions);
-    return;
   }
-  // update v_{i+1/2}
-  m_velocities.x += 0.5 * m_timestep * m_forces.x / m_mass;
-  m_velocities.y += 0.5 * m_timestep * m_forces.y / m_mass;
-  m_velocities.z += 0.5 * m_timestep * m_forces.z / m_mass;
-  // update x_{i+1/2}
-  m_positions.x += 0.5 * m_velocities.x * m_timestep; 
-  m_positions.y += 0.5 * m_velocities.y * m_timestep;
-  m_positions.z += 0.5 * m_velocities.z * m_timestep;
-  // Langevin thermostat, full step
-  m_velocities.x = m_factor1 * m_velocities.x + m_factor2 * randGaussian();
-  m_velocities.y = m_factor1 * m_velocities.y + m_factor2 * randGaussian();
-  m_velocities.z = m_factor1 * m_velocities.z + m_factor2 * randGaussian();
-  // update x_{i+1}
-  m_positions.x += 0.5 * m_velocities.x * m_timestep;
-  m_positions.y += 0.5 * m_velocities.y * m_timestep;
-  m_positions.z += 0.5 * m_velocities.z * m_timestep;
-  // update f_{i+1}
-  // m_forces = updateForce(m_positions);
-  m_bias_force = biasForce(m_positions);
-  const auto restraint_force = restraintForce(m_positions);
-  // apply bias force
-  m_forces.x += m_bias_force.x;
-  m_forces.y += m_bias_force.y;
-  m_forces.z += m_bias_force.z;
-  m_forces.x += restraint_force.x;
-  m_forces.y += restraint_force.y;
-  m_forces.z += restraint_force.z;
-  // update v_{i+1}
-  m_velocities.x += 0.5 * m_timestep * m_forces.x / m_mass;
-  m_velocities.y += 0.5 * m_timestep * m_forces.y / m_mass;
-  m_velocities.z += 0.5 * m_timestep * m_forces.z / m_mass;
+  updateForce();
 }
 
-void BiasWTMeABF2D::positionCallback2(const double3& position) {
-  m_real_positions = position;
-  if (m_first_time) {
-    m_positions = m_real_positions;
-    m_velocities.x = randGaussian();
-    m_velocities.y = randGaussian();
-    m_velocities.z = randGaussian();
-    const double alpha = std::sqrt(1 / (beta() * m_mass));
-    m_velocities.x *= alpha;
-    m_velocities.y *= alpha;
-    m_velocities.z *= alpha;
-    m_first_time = false;
-    return;
-  }
+void BiasWTMeABF2D::updateExtendedLagrangian() {
   const double c1 = std::sqrt(m_factor1);
   const double c2 = std::sqrt((1.0-c1*c1)/(beta() * m_mass));
-  // update f_{i+1}
-  // m_forces = updateForce(m_positions);
   m_bias_force = biasForce(m_positions);
   const auto restraint_force = restraintForce(m_positions);
   // apply bias force
@@ -213,30 +166,28 @@ double BiasWTMeABF2D::sumHistoryHillsAtPosition(const std::vector<double>& pos) 
 }
 
 // TODO: tune MTD parameters
-double3 BiasWTMeABF2D::updateForce(const double3& position) {
-  // std::cerr << "Update force at step " << m_step << std::endl;
-  // ABF
+void BiasWTMeABF2D::updateForce() {
+  // std::cout << "Update force at step " << m_step << std::endl;
   // system force acting on position
-  const double3 system_force{
-    -1.0 * m_kappa * (position.x - m_real_positions.x),
-    -1.0 * m_kappa * (position.y - m_real_positions.y),
-    -1.0 * m_kappa * (position.z - m_real_positions.z)
-  };
-  m_tmp_pos[0] = position.x;
-  m_tmp_pos[1] = position.y;
-  // m_tmp_system_f[0] = system_force.x;
-  // m_tmp_system_f[1] = system_force.y;
+  m_forces.x = -1.0 * m_kappa * (m_positions.x - m_real_positions.x);
+  m_forces.y = -1.0 * m_kappa * (m_positions.y - m_real_positions.y);
+  m_forces.z = -1.0 * m_kappa * (m_positions.z - m_real_positions.z);
+  // force applied back to real positions
+  m_applied_forces.x = -m_forces.x;
+  m_applied_forces.y = -m_forces.y;
+  m_applied_forces.z = -m_forces.z;
+  // ABF on extended Lagrangian
+  m_tmp_pos[0] = m_positions.x;
+  m_tmp_pos[1] = m_positions.y;
   // compute the negative average force and store it
   double current_count = 0;
   if (m_count.get(m_tmp_pos, current_count)) {
     std::vector<double> previous_system_force{0, 0};
     m_bias_abf.get(m_tmp_pos, previous_system_force);
-    m_tmp_system_f[0] = (-system_force.x / (current_count + 1.0)) + previous_system_force[0] * (current_count / (current_count + 1.0));
-    m_tmp_system_f[1] = (-system_force.y / (current_count + 1.0)) + previous_system_force[1] * (current_count / (current_count + 1.0));
+    m_tmp_system_f[0] = (-m_forces.x / (current_count + 1.0)) + previous_system_force[0] * (current_count / (current_count + 1.0));
+    m_tmp_system_f[1] = (-m_forces.y / (current_count + 1.0)) + previous_system_force[1] * (current_count / (current_count + 1.0));
     m_bias_abf.set(m_tmp_pos, m_tmp_system_f);
     m_count.add(m_tmp_pos, 1.0);
-    // std::cout << fmt::format("system force: {:15.10f} {:15.10f}, previous avg: {:15.10f} {:15.10f}, count: {:15.10f}\n",
-    //                          system_force.x, system_force.y, previous_system_force[0], previous_system_force[1], current_count);
   }
   // collect info for CZAR
   const vector<double> tmp_real_pos{m_real_positions.x, m_real_positions.y};
@@ -245,67 +196,66 @@ double3 BiasWTMeABF2D::updateForce(const double3& position) {
     std::vector<double> previous_zgrad{0, 0};
     std::vector<double> tmp_real_f{0, 0};
     m_zgrad.get(tmp_real_pos, previous_zgrad);
-    tmp_real_f[0] = (system_force.x / (current_zcount + 1.0)) + previous_zgrad[0] * (current_zcount / (current_zcount + 1.0));
-    tmp_real_f[1] = (system_force.y / (current_zcount + 1.0)) + previous_zgrad[1] * (current_zcount / (current_zcount + 1.0));
+    tmp_real_f[0] = (-m_forces.x / (current_zcount + 1.0)) + previous_zgrad[0] * (current_zcount / (current_zcount + 1.0));
+    tmp_real_f[1] = (-m_forces.y / (current_zcount + 1.0)) + previous_zgrad[1] * (current_zcount / (current_zcount + 1.0));
     m_zgrad.set(tmp_real_pos, tmp_real_f);
     m_zcount.add(tmp_real_pos, 1.0);
   }
   // MTD
-  // if (m_step % m_hill_freq == 0) {
-  //   // setup hill
-  //   m_tmp_current_hill.mCenters[0] = position.x;
-  //   m_tmp_current_hill.mCenters[1] = position.y;
-  //   m_tmp_current_hill.mSigmas[0] = m_hill_sigma[0];
-  //   m_tmp_current_hill.mSigmas[1] = m_hill_sigma[1];
-  //   // well-tempered MTD requires the previous biasing potential
-  //   double previous_bias_V = 0;
-  //   vector<double>& sum_hills_array = m_mtd_sum_hills.getRawData();
-  //   if (!m_mtd_sum_hills.isInGrid(m_tmp_current_hill.mCenters)) {
-  //     // if the position is outside the boundary, then sum it from the history
-  //     std::cerr << fmt::format("Warning: at step {:d}, a hill is deposited out-of-bound at {:.10f} {:.10f}\n",
-  //                              m_step, m_tmp_current_hill.mCenters[0], m_tmp_current_hill.mCenters[1]);
-  //     previous_bias_V = sumHistoryHillsAtPosition(m_tmp_current_hill.mCenters);
-  //   } else {
-  //     // fast path: if the hill is inside the boundary, then get it from the grid
-  //     size_t addr = 0;
-  //     m_mtd_sum_hills.address(m_tmp_current_hill.mCenters, addr);
-  //     previous_bias_V = sum_hills_array[addr];
-  //   }
-  //   const double bias_temperature = 3000.0;
-  //   const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * bias_temperature));
-  //   m_tmp_current_hill.mHeight = well_tempered_factor * m_hill_initial_height;
-  //   // save the current hill
-  //   m_history_hills.push_back(m_tmp_current_hill);
-  //   // print hill trajectory
-  //   m_hill_traj << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f} {:15.10f} {:15.10f}\n",
-  //                              m_step, m_tmp_current_hill.mCenters[0], m_tmp_current_hill.mCenters[1],
-  //                              m_tmp_current_hill.mSigmas[0], m_tmp_current_hill.mSigmas[1],
-  //                              m_tmp_current_hill.mHeight);
-  //   // project hill
-  //   const vector<vector<double>>& point_table = m_bias_mtd.getTable();
-  //   vector<double>& mtd_bias_force_array = m_bias_mtd.getRawData();
-  //   // TODO: should be parallelized for performance
-  //   // std::cout << "dimension: " << point_table.size() << std::endl;
-  //   for (size_t i = 0; i < point_table[0].size(); ++i) {
-  //     for (size_t j = 0; j < point_table.size(); ++j) {
-  //       m_tmp_grid_pos[j] = point_table[j][i];
-  //     }
-  //     // m_tmp_grid_pos: the grid point in the histogram
-  //     size_t addr = 0;
-  //     double hill_energy = 0;
-  //     m_mtd_sum_hills.address(m_tmp_grid_pos, addr);
-  //     // compute hill energy and gradients
-  //     m_tmp_current_hill.hillEnergyGradients(
-  //       m_tmp_grid_pos, m_bias_mtd.getAxes(),
-  //       m_tmp_hill_gradient, hill_energy);
-  //     for (size_t i = 0; i < point_table.size(); ++i) {
-  //       mtd_bias_force_array[addr + i] += -1.0 * m_tmp_hill_gradient[i];
-  //     }
-  //     sum_hills_array[addr] += hill_energy;
-  //   }
-  // }
+  if (m_step % m_hill_freq == 0 && m_step > 0) {
+    // setup hill
+    m_tmp_current_hill.mCenters[0] = m_positions.x;
+    m_tmp_current_hill.mCenters[1] = m_positions.y;
+    m_tmp_current_hill.mSigmas[0] = m_hill_sigma[0];
+    m_tmp_current_hill.mSigmas[1] = m_hill_sigma[1];
+    // well-tempered MTD requires the previous biasing potential
+    double previous_bias_V = 0;
+    vector<double>& sum_hills_array = m_mtd_sum_hills.getRawData();
+    if (!m_mtd_sum_hills.isInGrid(m_tmp_current_hill.mCenters)) {
+      // if the position is outside the boundary, then sum it from the history
+      std::cerr << fmt::format("Warning: at step {:d}, a hill is deposited out-of-bound at {:.10f} {:.10f}\n",
+                               m_step, m_tmp_current_hill.mCenters[0], m_tmp_current_hill.mCenters[1]);
+      previous_bias_V = sumHistoryHillsAtPosition(m_tmp_current_hill.mCenters);
+    } else {
+      // fast path: if the hill is inside the boundary, then get it from the grid
+      size_t addr = 0;
+      m_mtd_sum_hills.address(m_tmp_current_hill.mCenters, addr);
+      previous_bias_V = sum_hills_array[addr];
+    }
+    const double bias_temperature = 3000.0;
+    const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * bias_temperature));
+    m_tmp_current_hill.mHeight = well_tempered_factor * m_hill_initial_height;
+    // save the current hill
+    m_history_hills.push_back(m_tmp_current_hill);
+    // print hill trajectory
+    m_hill_traj << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f} {:15.10f} {:15.10f}\n",
+                               m_step, m_tmp_current_hill.mCenters[0], m_tmp_current_hill.mCenters[1],
+                               m_tmp_current_hill.mSigmas[0], m_tmp_current_hill.mSigmas[1],
+                               m_tmp_current_hill.mHeight);
+    // project hill
+    const vector<vector<double>>& point_table = m_bias_mtd.getTable();
+    vector<double>& mtd_bias_force_array = m_bias_mtd.getRawData();
+    // TODO: should be parallelized for performance
+    // std::cout << "dimension: " << point_table.size() << std::endl;
+    for (size_t i = 0; i < point_table[0].size(); ++i) {
+      for (size_t j = 0; j < point_table.size(); ++j) {
+        m_tmp_grid_pos[j] = point_table[j][i];
+      }
+      // m_tmp_grid_pos: the grid point in the histogram
+      size_t addr = 0;
+      double hill_energy = 0;
+      m_mtd_sum_hills.address(m_tmp_grid_pos, addr);
+      // compute hill energy and gradients
+      m_tmp_current_hill.hillEnergyGradients(
+        m_tmp_grid_pos, m_bias_mtd.getAxes(),
+        m_tmp_hill_gradient, hill_energy);
+      for (size_t i = 0; i < point_table.size(); ++i) {
+        mtd_bias_force_array[addr + i] += -1.0 * m_tmp_hill_gradient[i];
+      }
+      sum_hills_array[addr] += hill_energy;
+    }
+  }
   // std::cerr << "Update force done" << std::endl;
-  return system_force;
 }
 
 double3 BiasWTMeABF2D::biasForce(const double3& position) {
@@ -315,7 +265,7 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
   vector<double> mtd_bias_force(2, 0);
   double count = 0;
   m_bias_abf.get(tmp_pos, abf_bias_force);
-  // m_bias_mtd.get(tmp_pos, mtd_bias_force);
+  m_bias_mtd.get(tmp_pos, mtd_bias_force);
   m_count.get(tmp_pos, count);
   // abf_bias_force is actually the sum of instantaneous collective force
   const double fullsample = 200.0;
@@ -343,11 +293,11 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
 double3 BiasWTMeABF2D::restraintForce(const double3& position) {
   // wall boundaries at -6 and 6
   double3 force{0, 0, 0};
-  const double force_constant = 10000.0;
-  const double x_lower = -4.0;
-  const double x_upper = 4.0;
-  const double y_lower = -4.0;
-  const double y_upper = 4.0;
+  const double force_constant = 10.0;
+  const double x_lower = -6.0;
+  const double x_upper = 6.0;
+  const double y_lower = -6.0;
+  const double y_upper = 6.0;
   if (position.x < x_lower) {
     force.x = -1.0 * force_constant * (position.x - x_lower);
   } else if (position.x > x_upper) {

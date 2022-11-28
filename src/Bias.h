@@ -28,13 +28,13 @@ public:
                 double temperatue, double friction, double timestep,
                 const std::string& hill_traj_filename);
   ~BiasWTMeABF2D();
-  void positionCallback(const double3& position);
-  void positionCallback2(const double3& position);
+  void updateExtendedLagrangian();
   void applyBiasForce(double3& force);
   double randGaussian();
   double beta() const;
   void writeOutput(const string& filename) const;
   void recordStep(const int64_t& step) {m_step = step;}
+  void updateCV(const double3& position);
   void writeTrajectory(std::ostream& os) const;
   double sumHistoryHillsAtPosition(const std::vector<double>& pos) const;
 private:
@@ -43,6 +43,7 @@ private:
   // extended variables
   double                  m_mass;
   double3                 m_forces;
+  double3                 m_applied_forces;
   double3                 m_velocities;
   double3                 m_positions;
   double                  m_kappa;
@@ -74,7 +75,7 @@ private:
   // CZAR estimator
   CZARCount               m_zcount;
   HistogramVector         m_zgrad;
-  double3 updateForce(const double3& position);
+  void updateForce();
   double3 biasForce(const double3& position);
   // MTD hill traj
   std::ofstream           m_hill_traj;
