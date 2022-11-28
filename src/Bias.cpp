@@ -226,13 +226,13 @@ double3 BiasWTMeABF2D::updateForce(const double3& position) {
   m_tmp_pos[1] = position.y;
   // m_tmp_system_f[0] = system_force.x;
   // m_tmp_system_f[1] = system_force.y;
-  // compute average force and store it
+  // compute the negative average force and store it
   double current_count = 0;
   if (m_count.get(m_tmp_pos, current_count)) {
     std::vector<double> previous_system_force{0, 0};
     m_bias_abf.get(m_tmp_pos, previous_system_force);
-    m_tmp_system_f[0] = (-system_force.x + previous_system_force[0] * current_count) / (current_count + 1.0);
-    m_tmp_system_f[1] = (-system_force.y + previous_system_force[1] * current_count) / (current_count + 1.0);
+    m_tmp_system_f[0] = (-system_force.x / (current_count + 1.0)) + previous_system_force[0] * (current_count / (current_count + 1.0));
+    m_tmp_system_f[1] = (-system_force.y / (current_count + 1.0)) + previous_system_force[1] * (current_count / (current_count + 1.0));
     m_bias_abf.set(m_tmp_pos, m_tmp_system_f);
     m_count.add(m_tmp_pos, 1.0);
     // std::cout << fmt::format("system force: {:15.10f} {:15.10f}, previous avg: {:15.10f} {:15.10f}, count: {:15.10f}\n",
@@ -245,8 +245,8 @@ double3 BiasWTMeABF2D::updateForce(const double3& position) {
     std::vector<double> previous_zgrad{0, 0};
     std::vector<double> tmp_real_f{0, 0};
     m_zgrad.get(tmp_real_pos, previous_zgrad);
-    tmp_real_f[0] = (system_force.x + previous_zgrad[0] * current_zcount) / (current_zcount + 1.0);
-    tmp_real_f[1] = (system_force.y + previous_zgrad[1] * current_zcount) / (current_zcount + 1.0);
+    tmp_real_f[0] = (system_force.x / (current_zcount + 1.0)) + previous_zgrad[0] * (current_zcount / (current_zcount + 1.0));
+    tmp_real_f[1] = (system_force.y / (current_zcount + 1.0)) + previous_zgrad[1] * (current_zcount / (current_zcount + 1.0));
     m_zgrad.set(tmp_real_pos, tmp_real_f);
     m_zcount.add(tmp_real_pos, 1.0);
   }
@@ -318,8 +318,15 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
   // m_bias_mtd.get(tmp_pos, mtd_bias_force);
   m_count.get(tmp_pos, count);
   // abf_bias_force is actually the sum of instantaneous collective force
-  const double fullsample = 500.0;
-  double abf_force_factor = count > fullsample ? 1.0 : count / fullsample;
+  const double fullsample = 200.0;
+  double abf_force_factor = 0;
+  if (count < fullsample / 2) {
+    abf_force_factor = 0;
+  } else if (count > fullsample) {
+    abf_force_factor = 1;
+  } else {
+    abf_force_factor = count / fullsample;
+  }
   force.x = abf_force_factor * abf_bias_force[0] + mtd_bias_force[0];
   force.y = abf_force_factor * abf_bias_force[1] + mtd_bias_force[1];
   if (m_step % 1000 == 0) {
@@ -355,7 +362,7 @@ double3 BiasWTMeABF2D::restraintForce(const double3& position) {
 }
 
 void BiasWTMeABF2D::writeOutput(const string& filename) const {
-  m_count.writeToFile(filename + ".count");
+  m_count.writeToFile(filename + ".abf.count");
   m_zcount.writeToFile(filename + ".zcount");
   m_mtd_sum_hills.writeToFile(filename + ".mtd");
   m_bias_abf.writeToFile(filename + ".abf.grad");
