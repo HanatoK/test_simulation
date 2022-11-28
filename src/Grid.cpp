@@ -485,8 +485,8 @@ void HistogramVector::readFromFile(const string& filename) {
       for (size_t j = 0; j < mNDim; ++j) {
         pos[j] = std::stod(fields[j]);
       }
-      for (size_t j = mNDim - 1; j < fields.size(); ++j) {
-        value[j] = stod(fields[j]);
+      for (size_t j = mNDim; j < fields.size(); ++j) {
+        value.push_back(std::stod(fields[j]));
       }
       set(pos, value);
       ++data_count;
