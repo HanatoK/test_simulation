@@ -29,6 +29,7 @@ public:
                 const std::string& hill_traj_filename);
   ~BiasWTMeABF2D();
   void positionCallback(const double3& position);
+  void positionCallback2(const double3& position);
   void applyBiasForce(double3& force);
   double randGaussian();
   double beta() const;

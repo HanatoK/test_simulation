@@ -4,7 +4,7 @@ void Simulation::initializeVelocities() {
   m_velocities.x = randGaussian();
   m_velocities.y = randGaussian();
   m_velocities.z = randGaussian();
-  const double alpha = std::sqrt(1 / (beta() * m_mass));
+  const double alpha = std::sqrt(conversion_factor / (beta() * m_mass));
   m_velocities.x *= alpha;
   m_velocities.y *= alpha;
   m_velocities.z *= alpha;
@@ -48,8 +48,8 @@ void Simulation::runLangevinDynamics(
   std::function<void(double&)> potentialEnergyCallback,
   std::function<void(int64_t)> stepCallback,
   std::function<void()> runCallback) {
-  double3 force = forceFunction(m_positions);
   positionCallback(m_positions);
+  double3 force = forceFunction(m_positions);
   double Ek = kineticEnergy();
   kineticEnergyCallback(Ek);
   double Ep = potentialFunction(m_positions);
@@ -59,20 +59,20 @@ void Simulation::runLangevinDynamics(
   const double factor1x = std::exp(-1.0 * frictions.x * timestep);
   const double factor1y = std::exp(-1.0 * frictions.y * timestep);
   const double factor1z = std::exp(-1.0 * frictions.z * timestep);
-  const double factor2x = std::sqrt(1.0 / (beta() * m_mass)) *
+  const double factor2x = std::sqrt(conversion_factor / (beta() * m_mass)) *
                          std::sqrt(1.0 - std::exp(-2.0 * frictions.x * timestep));
-  const double factor2y = std::sqrt(1.0 / (beta() * m_mass)) *
+  const double factor2y = std::sqrt(conversion_factor / (beta() * m_mass)) *
                          std::sqrt(1.0 - std::exp(-2.0 * frictions.y * timestep));
-  const double factor2z = std::sqrt(1.0 / (beta() * m_mass)) *
+  const double factor2z = std::sqrt(conversion_factor / (beta() * m_mass)) *
                          std::sqrt(1.0 - std::exp(-2.0 * frictions.z * timestep));
-  runCallback();
   // BAOAB
-  for (int64_t i = 0; i <= steps; ++i) {
-    stepCallback(i);
+  stepCallback(0);
+  runCallback();
+  for (int64_t i = 1; i <= steps; ++i) {
     // update v_{i+1/2}
-    m_velocities.x += 0.5 * timestep * force.x / m_mass;
-    m_velocities.y += 0.5 * timestep * force.y / m_mass;
-    m_velocities.z += 0.5 * timestep * force.z / m_mass;
+    m_velocities.x += conversion_factor * 0.5 * timestep * force.x / m_mass;
+    m_velocities.y += conversion_factor * 0.5 * timestep * force.y / m_mass;
+    m_velocities.z += conversion_factor * 0.5 * timestep * force.z / m_mass;
     // update x_{i+1/2}
     m_positions.x += 0.5 * m_velocities.x * timestep;
     m_positions.y += 0.5 * m_velocities.y * timestep;
@@ -85,6 +85,7 @@ void Simulation::runLangevinDynamics(
     m_positions.x += 0.5 * m_velocities.x * timestep;
     m_positions.y += 0.5 * m_velocities.y * timestep;
     m_positions.z += 0.5 * m_velocities.z * timestep;
+    // collect CVs and write traj
     positionCallback(m_positions);
     Ek = kineticEnergy();
     kineticEnergyCallback(Ek);
@@ -94,10 +95,11 @@ void Simulation::runLangevinDynamics(
     force = forceFunction(m_positions);
     forceCallback(force);
     // update v_{i+1}
-    m_velocities.x += 0.5 * timestep * force.x / m_mass;
-    m_velocities.y += 0.5 * timestep * force.y / m_mass;
-    m_velocities.z += 0.5 * timestep * force.z / m_mass;
+    m_velocities.x += conversion_factor * 0.5 * timestep * force.x / m_mass;
+    m_velocities.y += conversion_factor * 0.5 * timestep * force.y / m_mass;
+    m_velocities.z += conversion_factor * 0.5 * timestep * force.z / m_mass;
     velocityCallback(m_velocities);
+    stepCallback(i);
     runCallback();
   }
 }

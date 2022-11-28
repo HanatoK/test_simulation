@@ -11,6 +11,7 @@
 // simulation of a single atom
 class Simulation {
 private:
+  const double conversion_factor = 418.4;
   double m_mass;
   double3 m_forces;
   double3 m_velocities;
@@ -35,7 +36,8 @@ public:
     ek += (m_velocities.x * m_velocities.x +
            m_velocities.y * m_velocities.y +
            m_velocities.z * m_velocities.z) * m_mass * 0.5;
-    return ek;
+    // convert to kcal/mol
+    return ek / conversion_factor;
   }
   double beta() const {
     return 1.0 / (m_temperatue * boltzmann_constant);

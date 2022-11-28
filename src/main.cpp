@@ -2,16 +2,22 @@
 #include "Potential.h"
 #include "Axis.h"
 #include "Bias.h"
+#include <string>
 #include <vector>
+
+const double timestep = 0.0005;
+const double mass = 12.0;
+const int64_t total_steps = 200000000;
+
 
 void UnbiasedSimulations1() {
   Reporter reporter(100, "XYZ_10_10.traj");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
-  Simulation simulation(1.0, 300.0, double3{-2.0, -2.0, 0.0});
+  Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
   double3 frictions{10.0, 10.0, 10.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
-    100000000, 0.5, frictions,
+    total_steps, timestep, frictions,
     [&](const double3& r){return potential.getForces(r);},
     [&](const double3& r){return potential.getPotential(r);},
     [&](const double3& f){reporter.recordForces(f);},
@@ -26,11 +32,11 @@ void UnbiasedSimulations1() {
 void UnbiasedSimulations2() {
   Reporter reporter(100, "XYZ_100_10.traj");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
-  Simulation simulation(1.0, 300.0, double3{-2.0, -2.0, 0.0});
+  Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
   double3 frictions{100.0, 10.0, 10.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
-    100000000, 0.5, frictions,
+    total_steps, timestep, frictions,
     [&](const double3& r){return potential.getForces(r);},
     [&](const double3& r){return potential.getPotential(r);},
     [&](const double3& f){reporter.recordForces(f);},
@@ -45,11 +51,11 @@ void UnbiasedSimulations2() {
 void UnbiasedSimulations3() {
   Reporter reporter(100, "XYZ_10_100.traj");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
-  Simulation simulation(1.0, 300.0, double3{-2.0, -2.0, 0.0});
+  Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
   double3 frictions{10.0, 100.0, 10.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
-    100000000, 0.5, frictions,
+    total_steps, timestep, frictions,
     [&](const double3& r){return potential.getForces(r);},
     [&](const double3& r){return potential.getPotential(r);},
     [&](const double3& f){reporter.recordForces(f);},
@@ -63,30 +69,32 @@ void UnbiasedSimulations3() {
 
 void BiasedSimulations1() {
   // setup bias
-  std::vector<Axis> ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
+  std::vector<Axis> ax{Axis(-4, 4, 320), Axis(-4, 4, 320)};
   std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
-  BiasWTMeABF2D bias(ax, mtd_ax, 100.0, 300.0*0.0019872041/(0.05*0.05), 300.0, 10.0, 0.5, "bias_10_10.hills");
+  BiasWTMeABF2D bias(ax, mtd_ax, 0.4, 300.0*0.0019872041/(0.05*0.05), 300.0, 10.0, timestep, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_10_10_b.traj");
   std::ofstream ofs_bias_traj("bias_10_10.dat");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
-  Simulation simulation(1.0, 300.0, double3{-2.0, -2.0, 0.0});
+  Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
   double3 frictions{10.0, 10.0, 10.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
-    100000000, 0.5, frictions,
+    total_steps, timestep, frictions,
     [&](const double3& r){
-      // compute and update CVs
-      bias.positionCallback(r);
       return potential.getForces(r);
     },
     [&](const double3& r){return potential.getPotential(r);},
     [&](double3& f){
-      reporter.recordForces(f);
       // apply the biasing force
-      // bias.applyBiasForce(f);
+      bias.applyBiasForce(f);
+      reporter.recordForces(f);
     },
     [&](const double3& v){reporter.recordVelocities(v);},
-    [&](const double3& r){reporter.recordPositions(r);},
+    [&](const double3& r){
+      reporter.recordPositions(r);
+      // compute and update CVs
+      bias.positionCallback2(r);
+    },
     [&](const double& Ek){reporter.recordKineticEnergy(Ek);},
     [&](const double& Ep){reporter.recordPotentialEnergy(Ep);},
     [&](int64_t step){
@@ -95,15 +103,19 @@ void BiasedSimulations1() {
       if (step % 100 == 0) {
         bias.writeTrajectory(ofs_bias_traj);
       }
+      if (step % 100000000 == 0) {
+        const std::string filename = "bias_10_10_step_" + std::to_string(step);
+        bias.writeOutput(filename);
+      }
     },
     [&](){reporter.report();});
   bias.writeOutput("bias_10_10");
 }
 
 int main() {
-  // UnbiasedSimulations1();
-  // UnbiasedSimulations2();
-  // UnbiasedSimulations3();
-  BiasedSimulations1();
+  UnbiasedSimulations1();
+  UnbiasedSimulations2();
+  UnbiasedSimulations3();
+  // BiasedSimulations1();
   return 0;
 }
