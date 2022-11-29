@@ -1,6 +1,6 @@
 #include "Simulation.h"
 #include "Potential.h"
-#include "Axis.h"
+#include "Histogram.h"
 #include "Bias.h"
 #include <string>
 #include <vector>
@@ -68,9 +68,9 @@ void UnbiasedSimulations3() {
 
 void BiasedSimulations1() {
   // setup bias
-  std::vector<Axis> ax{Axis(-6, 6, 120), Axis(-6, 6, 120)};
-  std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
-  BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.1*0.1), 300.0, 8.0, timestep, "bias_10_10.hills");
+  std::vector<Axis> ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
+  std::vector<Axis> mtd_ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
+  BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_10_10_b.traj");
   std::ofstream ofs_bias_traj("bias_10_10.dat");
   BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));

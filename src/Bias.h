@@ -1,7 +1,7 @@
 #ifndef BIAS_H
 #define BIAS_H
 
-#include "Grid.h"
+#include "Histogram.h"
 #include "Common.h"
 #include "Metadynamics.h"
 #include <random>
@@ -10,10 +10,11 @@ using std::random_device;
 using std::mt19937;
 using std::normal_distribution;
 
-class CZARCount: public HistogramScalar {
+class CZARCount: public virtual HistogramScalar<size_t> {
 public:
   CZARCount() {}
-  CZARCount(const vector<Axis>& ax): HistogramScalar(ax) {}
+  CZARCount(const vector<Axis>& ax): HistogramBase(ax), HistogramScalar(ax) {
+  }
   virtual ~CZARCount() {}
   virtual vector<double> getLogDerivative(const vector<double> &pos) const;
 };
@@ -59,10 +60,10 @@ private:
   mt19937                 m_random_generator;
   normal_distribution<>   m_normal_distribution;
   // ABF + MTD
-  HistogramVector         m_bias_abf;
-  HistogramVector         m_bias_mtd;
-  HistogramScalar         m_mtd_sum_hills;
-  HistogramScalar         m_count;
+  HistogramVector<double> m_bias_abf;
+  HistogramVector<double> m_bias_mtd;
+  HistogramScalar<double> m_mtd_sum_hills;
+  HistogramScalar<size_t> m_count;
   double3                 m_bias_force;
   Hill                    m_tmp_current_hill;
   int64_t                 m_hill_freq;
@@ -74,7 +75,7 @@ private:
   std::vector<double>     m_tmp_system_f;
   // CZAR estimator
   CZARCount               m_zcount;
-  HistogramVector         m_zgrad;
+  HistogramVector<double> m_zgrad;
   void updateForce();
   double3 biasForce(const double3& position);
   // MTD hill traj

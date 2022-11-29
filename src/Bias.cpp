@@ -3,26 +3,26 @@
 #include <numbers>
 
 vector<double> CZARCount::getLogDerivative(const vector<double> &pos) const {
-  vector<double> result(mNDim, 0.0);
-  size_t addr = 0;
-  bool inGrid = address(pos, addr);
+  vector<double> result(dimension(), 0.0);
+  bool inGrid = true;
+  size_t addr = address(pos, &inGrid);
   if (!inGrid) return result;
-  const double count_this = mValue[addr];
-  for (size_t i = 0; i < mNDim; ++i) {
+  const double count_this = mData[addr];
+  for (size_t i = 0; i < dimension(); ++i) {
     const double bin_width = mAxes[i].width();
     const size_t addr_first = addr - mAccu[i] * mAxes[i].index(pos[i]) + 0;
     const size_t addr_last = addr_first + mAccu[i] * (mAxes[i].bin() - 1);
     if (addr == addr_first) {
-      if (mAxes[i].isPeriodic()) {
-        const double count_next = mValue[addr + mAccu[i]];
-        const double count_prev = mValue[addr_last];
+      if (mAxes[i].periodic()) {
+        const double count_next = mData[addr + mAccu[i]];
+        const double count_prev = mData[addr_last];
         if (count_next > 0 && count_prev > 0) {
           result[i] =
             (std::log(count_next) - std::log(count_prev)) / (2.0 * bin_width);
         }
       } else {
-        const double count_next = mValue[addr + mAccu[i]];
-        const double count_next2 = mValue[addr + mAccu[i] * 2];
+        const double count_next = mData[addr + mAccu[i]];
+        const double count_next2 = mData[addr + mAccu[i] * 2];
         if (count_next > 0 && count_next2 > 0 && count_this > 0) {
           result[i] =
             (std::log(count_next2) * (-1.0) + std::log(count_next) * 4.0 -
@@ -31,16 +31,16 @@ vector<double> CZARCount::getLogDerivative(const vector<double> &pos) const {
         }
       }
     } else if (addr == addr_last) {
-      if (mAxes[i].isPeriodic()) {
-        const double count_prev = mValue[addr - mAccu[i]];
-        const double count_next = mValue[addr_first];
+      if (mAxes[i].periodic()) {
+        const double count_prev = mData[addr - mAccu[i]];
+        const double count_next = mData[addr_first];
         if (count_next > 0 && count_prev > 0) {
           result[i] =
             (std::log(count_next) - std::log(count_prev)) / (2.0 * bin_width);
         }
       } else {
-        const double count_prev = mValue[addr - mAccu[i]];
-        const double count_prev2 = mValue[addr - mAccu[i] * 2];
+        const double count_prev = mData[addr - mAccu[i]];
+        const double count_prev2 = mData[addr - mAccu[i] * 2];
         if (count_prev > 0 && count_this > 0 && count_prev2 > 0) {
           result[i] = (std::log(count_this) * 3.0 - std::log(count_prev) * 4.0 +
                       std::log(count_prev2)) /
@@ -48,8 +48,8 @@ vector<double> CZARCount::getLogDerivative(const vector<double> &pos) const {
         }
       }
     } else {
-      const double count_prev = mValue[addr - mAccu[i]];
-      const double count_next = mValue[addr + mAccu[i]];
+      const double count_prev = mData[addr - mAccu[i]];
+      const double count_next = mData[addr + mAccu[i]];
       if (count_next > 0 && count_prev > 0)
         result[i] =
           (std::log(count_next) - std::log(count_prev)) / (2 * bin_width);
@@ -80,8 +80,8 @@ BiasWTMeABF2D::BiasWTMeABF2D(
   m_factor1 = std::exp(-1.0 * m_friction * m_timestep);
   m_factor2 = std::sqrt(1.0 / (beta() * m_mass)) *
               std::sqrt(1.0 - std::exp(-2.0 * m_friction * m_timestep));
-  m_hill_sigma[0] = 5.0 * 0.1;
-  m_hill_sigma[1] = 5.0 * 0.1;
+  m_hill_sigma[0] = 8.0 * 0.05;
+  m_hill_sigma[1] = 8.0 * 0.05;
   m_hill_traj.open(hill_traj_filename);
   m_hill_traj << "# step x y sigma_x sigma_y height\n";
 }
@@ -158,7 +158,7 @@ void BiasWTMeABF2D::updateExtendedLagrangian() {
 
 double BiasWTMeABF2D::sumHistoryHillsAtPosition(const std::vector<double>& pos) const {
   double potential = 0;
-  const auto& ax = m_bias_mtd.getAxes();
+  const auto& ax = m_bias_mtd.axes();
   for (size_t i = 0; i < m_history_hills.size(); ++i) {
     potential += m_history_hills[i].hillEnergy(pos, ax);
   }
@@ -180,26 +180,34 @@ void BiasWTMeABF2D::updateForce() {
   m_tmp_pos[0] = m_positions.x;
   m_tmp_pos[1] = m_positions.y;
   // compute the negative average force and store it
-  double current_count = 0;
-  if (m_count.get(m_tmp_pos, current_count)) {
-    std::vector<double> previous_system_force{0, 0};
-    m_bias_abf.get(m_tmp_pos, previous_system_force);
+  if (m_count.isInGrid(m_tmp_pos)) {
+    const size_t N = m_bias_abf.multiplicity();
+    const size_t addr = m_count.address(m_tmp_pos);
+    const size_t current_count = m_count[addr];
+    std::vector<double> previous_system_force = m_bias_abf(m_tmp_pos);
     m_tmp_system_f[0] = (-m_forces.x / (current_count + 1.0)) + previous_system_force[0] * (current_count / (current_count + 1.0));
     m_tmp_system_f[1] = (-m_forces.y / (current_count + 1.0)) + previous_system_force[1] * (current_count / (current_count + 1.0));
-    m_bias_abf.set(m_tmp_pos, m_tmp_system_f);
-    m_count.add(m_tmp_pos, 1.0);
+    // m_bias_abf(m_tmp_pos) = m_tmp_system_f;
+    // m_count(m_tmp_pos) = current_count;
+    m_count[addr] += 1;
+    m_bias_abf[addr * N + 0] = m_tmp_system_f[0];
+    m_bias_abf[addr * N + 1] = m_tmp_system_f[1];
   }
   // collect info for CZAR
   const vector<double> tmp_real_pos{m_real_positions.x, m_real_positions.y};
-  double current_zcount = 0.0;
-  if (m_zcount.get(tmp_real_pos, current_zcount)) {
-    std::vector<double> previous_zgrad{0, 0};
+  if (m_zcount.isInGrid(tmp_real_pos)) {
+    const size_t N = m_zgrad.multiplicity();
+    const size_t addr = m_zcount.address(tmp_real_pos);
+    const size_t current_zcount = m_zcount[addr];
+    std::vector<double> previous_zgrad = m_zgrad(tmp_real_pos);
     std::vector<double> tmp_real_f{0, 0};
-    m_zgrad.get(tmp_real_pos, previous_zgrad);
     tmp_real_f[0] = (-m_forces.x / (current_zcount + 1.0)) + previous_zgrad[0] * (current_zcount / (current_zcount + 1.0));
     tmp_real_f[1] = (-m_forces.y / (current_zcount + 1.0)) + previous_zgrad[1] * (current_zcount / (current_zcount + 1.0));
-    m_zgrad.set(tmp_real_pos, tmp_real_f);
-    m_zcount.add(tmp_real_pos, 1.0);
+    // m_zgrad.set(tmp_real_pos, tmp_real_f);
+    // m_zcount.add(tmp_real_pos, 1.0);
+    m_zcount[addr] += 1;
+    m_zgrad[addr * N + 0] = tmp_real_f[0];
+    m_zgrad[addr * N + 1] = tmp_real_f[1];
   }
   // MTD
   if (m_step % m_hill_freq == 0 && m_step > 0) {
@@ -210,7 +218,7 @@ void BiasWTMeABF2D::updateForce() {
     m_tmp_current_hill.mSigmas[1] = m_hill_sigma[1];
     // well-tempered MTD requires the previous biasing potential
     double previous_bias_V = 0;
-    vector<double>& sum_hills_array = m_mtd_sum_hills.getRawData();
+    // vector<double>& sum_hills_array = m_mtd_sum_hills.getRawData();
     if (!m_mtd_sum_hills.isInGrid(m_tmp_current_hill.mCenters)) {
       // if the position is outside the boundary, then sum it from the history
       std::cerr << fmt::format("Warning: at step {:d}, a hill is deposited out-of-bound at {:.10f} {:.10f}\n",
@@ -218,9 +226,8 @@ void BiasWTMeABF2D::updateForce() {
       previous_bias_V = sumHistoryHillsAtPosition(m_tmp_current_hill.mCenters);
     } else {
       // fast path: if the hill is inside the boundary, then get it from the grid
-      size_t addr = 0;
-      m_mtd_sum_hills.address(m_tmp_current_hill.mCenters, addr);
-      previous_bias_V = sum_hills_array[addr];
+      const size_t addr = m_mtd_sum_hills.address(m_tmp_current_hill.mCenters);
+      previous_bias_V = -m_mtd_sum_hills[addr];
     }
     const double bias_temperature = 3000.0;
     const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * bias_temperature));
@@ -233,8 +240,7 @@ void BiasWTMeABF2D::updateForce() {
                                m_tmp_current_hill.mSigmas[0], m_tmp_current_hill.mSigmas[1],
                                m_tmp_current_hill.mHeight);
     // project hill
-    const vector<vector<double>>& point_table = m_bias_mtd.getTable();
-    vector<double>& mtd_bias_force_array = m_bias_mtd.getRawData();
+    const vector<vector<double>>& point_table = m_bias_mtd.pointTable();
     // TODO: should be parallelized for performance
     // std::cout << "dimension: " << point_table.size() << std::endl;
     for (size_t i = 0; i < point_table[0].size(); ++i) {
@@ -242,17 +248,17 @@ void BiasWTMeABF2D::updateForce() {
         m_tmp_grid_pos[j] = point_table[j][i];
       }
       // m_tmp_grid_pos: the grid point in the histogram
-      size_t addr = 0;
+      const size_t addr = m_mtd_sum_hills.address(m_tmp_grid_pos);
       double hill_energy = 0;
-      m_mtd_sum_hills.address(m_tmp_grid_pos, addr);
       // compute hill energy and gradients
       m_tmp_current_hill.hillEnergyGradients(
-        m_tmp_grid_pos, m_bias_mtd.getAxes(),
+        m_tmp_grid_pos, m_bias_mtd.axes(),
         m_tmp_hill_gradient, hill_energy);
       for (size_t i = 0; i < point_table.size(); ++i) {
-        mtd_bias_force_array[addr * point_table.size() + i] += m_tmp_hill_gradient[i];
+        m_bias_mtd[addr * point_table.size() + i] += -m_tmp_hill_gradient[i];
       }
-      sum_hills_array[addr] += hill_energy;
+      // TODO: well-tempered scaling
+      m_mtd_sum_hills[addr] += -hill_energy;
     }
   }
   // std::cerr << "Update force done" << std::endl;
@@ -265,8 +271,9 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
   vector<double> mtd_bias_force(2, 0);
   double count = 0;
   // m_bias_abf.get(tmp_pos, abf_bias_force);
-  m_bias_mtd.get(tmp_pos, mtd_bias_force);
-  m_count.get(tmp_pos, count);
+  if (m_bias_abf.isInGrid(tmp_pos)) abf_bias_force = m_bias_abf(tmp_pos);
+  if (m_bias_mtd.isInGrid(tmp_pos)) mtd_bias_force = m_bias_mtd(tmp_pos);
+  if (m_count.isInGrid(tmp_pos)) count = m_count(tmp_pos);
   // abf_bias_force is actually the sum of instantaneous collective force
   const double fullsample = 200.0;
   double abf_force_factor = 0;
@@ -293,7 +300,7 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
 double3 BiasWTMeABF2D::restraintForce(const double3& position) {
   // wall boundaries at -6 and 6
   double3 force{0, 0, 0};
-  const double force_constant = 10.0;
+  const double force_constant = 1000.0;
   const double x_lower = -6.0;
   const double x_upper = 6.0;
   const double y_lower = -6.0;
@@ -315,17 +322,17 @@ void BiasWTMeABF2D::writeOutput(const string& filename) const {
   m_count.writeToFile(filename + ".abf.count");
   m_zcount.writeToFile(filename + ".zcount");
   m_mtd_sum_hills.writeToFile(filename + ".mtd");
+  m_bias_mtd.writeToFile(filename + ".mtd.grad");
   m_bias_abf.writeToFile(filename + ".abf.grad");
   m_zgrad.writeToFile(filename + ".zgrad");
   // write CZAR gradients
   const string czar_grad_filename = filename + ".czar.grad";
   std::ofstream ofs_czar_grad(czar_grad_filename.c_str());
-  ofs_czar_grad << "# " << m_zgrad.getDimension() << '\n';
-  for (size_t j = 0; j < m_zgrad.getDimension(); ++j) {
-    ofs_czar_grad << m_zgrad.getAxes()[j].infoHeader() << '\n';
+  ofs_czar_grad << "# " << m_zgrad.dimension() << '\n';
+  for (size_t j = 0; j < m_zgrad.dimension(); ++j) {
+    ofs_czar_grad << m_zgrad.axes()[j].infoHeader() << '\n';
   }
-  const vector<vector<double>>& point_table = m_zgrad.getTable();
-  const vector<double>& zgrad_data = m_zgrad.getRawData();
+  const vector<vector<double>>& point_table = m_zgrad.pointTable();
   const size_t N = 2;
   vector<double> grid_pos(N);
   for (size_t i = 0; i < point_table[0].size(); ++i) {
@@ -333,12 +340,11 @@ void BiasWTMeABF2D::writeOutput(const string& filename) const {
       grid_pos[j] = point_table[j][i];
       ofs_czar_grad << fmt::format(" {:15.10f}", grid_pos[j]);
     }
-    size_t addr = 0;
-    m_zgrad.address(grid_pos, addr);
+    size_t addr = m_zgrad.address(grid_pos);
     const vector<double> log_deriv = m_zcount.getLogDerivative(grid_pos);
     // merge gradients
     for (size_t j = 0; j < grid_pos.size(); ++j) {
-      const double grad_value = -1.0 / beta() * log_deriv[j] + zgrad_data[addr * grid_pos.size() + j];
+      const double grad_value = -1.0 / beta() * log_deriv[j] + m_zgrad[addr * grid_pos.size() + j];
       ofs_czar_grad << fmt::format(" {:15.10f}", grad_value);
     }
     ofs_czar_grad << '\n';

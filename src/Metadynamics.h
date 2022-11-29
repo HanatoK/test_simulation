@@ -1,8 +1,7 @@
 #ifndef METADYNAMICS_H
 #define METADYNAMICS_H
 
-#include "Grid.h"
-#include "Axis.h"
+#include "Histogram.h"
 
 #include <vector>
 #include <string>
@@ -36,7 +35,7 @@ public:
 };
 
 // sum hills
-class MetaDynamics : public HistogramScalar
+class MetaDynamics : public HistogramScalar<double>
 {
 public:
     MetaDynamics() {}

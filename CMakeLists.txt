@@ -11,8 +11,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/Common.h
             ${PROJECT_SOURCE_DIR}/Simulation.h
             ${PROJECT_SOURCE_DIR}/Bias.h
             ${PROJECT_SOURCE_DIR}/Metadynamics.h
-            ${PROJECT_SOURCE_DIR}/Grid.h
-            ${PROJECT_SOURCE_DIR}/Axis.h
+            ${PROJECT_SOURCE_DIR}/Histogram.h
 )
 
 
@@ -22,8 +21,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/Common.cpp
             ${PROJECT_SOURCE_DIR}/main.cpp
             ${PROJECT_SOURCE_DIR}/Bias.cpp
             ${PROJECT_SOURCE_DIR}/Metadynamics.cpp
-            ${PROJECT_SOURCE_DIR}/Grid.cpp
-            ${PROJECT_SOURCE_DIR}/Axis.cpp
+            ${PROJECT_SOURCE_DIR}/Histogram.cpp
 )
 
 find_package(fmt CONFIG REQUIRED)
