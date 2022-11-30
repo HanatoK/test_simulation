@@ -7,7 +7,7 @@
 
 const double timestep = 0.0005;
 const double mass = 12.0;
-const int64_t total_steps = 400000000;
+const int64_t total_steps = 600000000;
 
 void UnbiasedSimulations1() {
   Reporter reporter(100, "XYZ_10_10.traj");
@@ -68,8 +68,8 @@ void UnbiasedSimulations3() {
 
 void BiasedSimulations1() {
   // setup bias
-  std::vector<Axis> ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
-  std::vector<Axis> mtd_ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
+  std::vector<Axis> ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
+  std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_10_10_b.traj");
   std::ofstream ofs_bias_traj("bias_10_10.dat");
@@ -80,7 +80,12 @@ void BiasedSimulations1() {
   simulation.runLangevinDynamics(
     total_steps, timestep, frictions,
     [&](const double3& r){
-      return potential.getForces(r);
+      auto force =  potential.getForces(r);
+      const auto restraint_force = restraintForce(r);
+      force.x += restraint_force.x;
+      force.y += restraint_force.y;
+      force.z += restraint_force.z;
+      return force;
     },
     [&](const double3& r){return potential.getPotential(r);},
     [&](double3& f){
@@ -114,8 +119,8 @@ void BiasedSimulations1() {
 
 void BiasedSimulations2() {
   // setup bias
-  std::vector<Axis> ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
-  std::vector<Axis> mtd_ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
+  std::vector<Axis> ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
+  std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_100_10_b.traj");
   std::ofstream ofs_bias_traj("bias_100_10.dat");
@@ -126,7 +131,12 @@ void BiasedSimulations2() {
   simulation.runLangevinDynamics(
     total_steps, timestep, frictions,
     [&](const double3& r){
-      return potential.getForces(r);
+      auto force =  potential.getForces(r);
+      const auto restraint_force = restraintForce(r);
+      force.x += restraint_force.x;
+      force.y += restraint_force.y;
+      force.z += restraint_force.z;
+      return force;
     },
     [&](const double3& r){return potential.getPotential(r);},
     [&](double3& f){
@@ -161,8 +171,8 @@ void BiasedSimulations2() {
 
 void BiasedSimulations3() {
   // setup bias
-  std::vector<Axis> ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
-  std::vector<Axis> mtd_ax{Axis(-6, 6, 240), Axis(-6, 6, 240)};
+  std::vector<Axis> ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
+  std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep, "bias_10_10.hills");
   Reporter reporter(100, "XYZ_10_100_b.traj");
   std::ofstream ofs_bias_traj("bias_10_100.dat");
@@ -173,7 +183,12 @@ void BiasedSimulations3() {
   simulation.runLangevinDynamics(
     total_steps, timestep, frictions,
     [&](const double3& r){
-      return potential.getForces(r);
+      auto force =  potential.getForces(r);
+      const auto restraint_force = restraintForce(r);
+      force.x += restraint_force.x;
+      force.y += restraint_force.y;
+      force.z += restraint_force.z;
+      return force;
     },
     [&](const double3& r){return potential.getPotential(r);},
     [&](double3& f){

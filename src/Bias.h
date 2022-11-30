@@ -81,8 +81,9 @@ private:
   // MTD hill traj
   std::ofstream           m_hill_traj;
   std::vector<Hill>       m_history_hills;
-  // restraint
-  double3 restraintForce(const double3& position);
 };
+
+// restraint
+double3 restraintForce(const double3& position);
 
 #endif // BIAS_H

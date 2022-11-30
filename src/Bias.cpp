@@ -80,8 +80,8 @@ BiasWTMeABF2D::BiasWTMeABF2D(
   m_factor1 = std::exp(-1.0 * m_friction * m_timestep);
   m_factor2 = std::sqrt(1.0 / (beta() * m_mass)) *
               std::sqrt(1.0 - std::exp(-2.0 * m_friction * m_timestep));
-  m_hill_sigma[0] = 8.0 * 0.05;
-  m_hill_sigma[1] = 8.0 * 0.05;
+  m_hill_sigma[0] = 4.0 * 0.05;
+  m_hill_sigma[1] = 4.0 * 0.05;
   m_hill_traj.open(hill_traj_filename);
   m_hill_traj << "# step x y sigma_x sigma_y height\n";
 }
@@ -126,14 +126,14 @@ void BiasWTMeABF2D::updateExtendedLagrangian() {
   const double c1 = std::sqrt(m_factor1);
   const double c2 = std::sqrt((1.0-c1*c1)/(beta() * m_mass));
   m_bias_force = biasForce(m_positions);
-  const auto restraint_force = restraintForce(m_positions);
+  // const auto restraint_force = restraintForce(m_positions);
   // apply bias force
   m_forces.x += m_bias_force.x;
   m_forces.y += m_bias_force.y;
   m_forces.z += m_bias_force.z;
-  m_forces.x += restraint_force.x;
-  m_forces.y += restraint_force.y;
-  m_forces.z += restraint_force.z;
+  // m_forces.x += restraint_force.x;
+  // m_forces.y += restraint_force.y;
+  // m_forces.z += restraint_force.z;
   // update v_{i+1/2}
   m_velocities.x += 0.5 * m_timestep * m_forces.x / m_mass;
   m_velocities.y += 0.5 * m_timestep * m_forces.y / m_mass;
@@ -229,7 +229,7 @@ void BiasWTMeABF2D::updateForce() {
       const size_t addr = m_mtd_sum_hills.address(m_tmp_current_hill.mCenters);
       previous_bias_V = -m_mtd_sum_hills[addr];
     }
-    const double bias_temperature = 3000.0;
+    const double bias_temperature = 1000.0;
     const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * bias_temperature));
     m_tmp_current_hill.mHeight = well_tempered_factor * m_hill_initial_height;
     // save the current hill
@@ -257,7 +257,6 @@ void BiasWTMeABF2D::updateForce() {
       for (size_t i = 0; i < point_table.size(); ++i) {
         m_bias_mtd[addr * point_table.size() + i] += -m_tmp_hill_gradient[i];
       }
-      // TODO: well-tempered scaling
       m_mtd_sum_hills[addr] += -hill_energy;
     }
   }
@@ -297,14 +296,14 @@ double3 BiasWTMeABF2D::biasForce(const double3& position) {
   return force;
 }
 
-double3 BiasWTMeABF2D::restraintForce(const double3& position) {
+double3 restraintForce(const double3& position) {
   // wall boundaries at -6 and 6
   double3 force{0, 0, 0};
-  const double force_constant = 1000.0;
-  const double x_lower = -6.0;
-  const double x_upper = 6.0;
-  const double y_lower = -6.0;
-  const double y_upper = 6.0;
+  const double force_constant = 8000.0;
+  const double x_lower = -7.0;
+  const double x_upper = 7.0;
+  const double y_lower = -7.0;
+  const double y_upper = 7.0;
   if (position.x < x_lower) {
     force.x = -1.0 * force_constant * (position.x - x_lower);
   } else if (position.x > x_upper) {
