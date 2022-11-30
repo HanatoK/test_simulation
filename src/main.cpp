@@ -222,9 +222,9 @@ void BiasedSimulations3() {
 }
 
 int main() {
-  // UnbiasedSimulations1();
-  // UnbiasedSimulations2();
-  // UnbiasedSimulations3();
+  UnbiasedSimulations1();
+  UnbiasedSimulations2();
+  UnbiasedSimulations3();
   BiasedSimulations1();
   BiasedSimulations2();
   BiasedSimulations3();

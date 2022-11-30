@@ -11,6 +11,7 @@ matplotlib.use("Agg")
 plt.rcParams.update({
     "pgf.texsystem": "lualatex",
     "font.family": "FreeSans",  # use serif/main font for text elements
+    "mathtext.fontset": "stix",
     "text.usetex": False,     # use inline math for ticks
     "pgf.rcfonts": False,    # don't setup fonts from rc parameters
     "axes.labelsize": 28,
@@ -28,10 +29,10 @@ plt.rcParams.update({
 # parser.add_argument("--levels", default = 25, type = int, help = "number of levels")
 # args = parser.parse_args()
 
-def plotfes(pmffilename, pngfilename, xtitle, ytitle):
+def plotfes(pmffilename, pngfilename, xtitle, ytitle, title=''):
     x, y, z = np.genfromtxt(pmffilename, unpack=True)
     # z = z
-    # z = z - np.min(z)
+    z = z - np.min(z)
     # w, h = figaspect(1/1.75)
     # plt.figure(figsize=(w, h))
     # z = np.clip(z, 0, 16.0)
@@ -40,21 +41,22 @@ def plotfes(pmffilename, pngfilename, xtitle, ytitle):
     xi = x.reshape(binx, biny)
     yi = y.reshape(binx, biny)
     zi = z.reshape(binx, biny)
-    cf = plt.contourf(xi, yi, zi, np.linspace(0, 12, 25), cmap='nipy_spectral')
+    cf = plt.contourf(xi, yi, zi, np.linspace(0, 12, 49), cmap='nipy_spectral')
     plt.xlabel(xtitle)
     plt.ylabel(ytitle)
     #plt.title('Free Energy Surface')
     ax = plt.gca()
-    ax.set_xlim(-6, 6)
-    ax.set_ylim(-6, 6)
+    ax.set_title(title)
+    ax.set_xlim(-7, 7)
+    ax.set_ylim(-7, 7)
     ax.tick_params(direction = 'in', which = 'major', length=6.0, width = 1.0, top = True, right = True)
     ax.tick_params(direction = 'in', which = 'minor', length=3.0, width = 1.0, top = True, right = True)
     ax.xaxis.get_major_formatter()._usetex = False
     ax.yaxis.get_major_formatter()._usetex = False
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.xaxis.set_major_locator(plt.MaxNLocator(6))
-    ax.yaxis.set_major_locator(plt.MaxNLocator(6))
+    ax.xaxis.set_major_locator(plt.MaxNLocator(7))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(7))
     clb = plt.colorbar()
     clb.ax.set_title("kcal/mol", fontsize=20, pad=10.0)
     clb.ax.xaxis.get_major_formatter()._usetex = False
@@ -65,6 +67,10 @@ def plotfes(pmffilename, pngfilename, xtitle, ytitle):
     # clb.ax.set_yticklabels(clbticksstr, fontsize = 20)
     clb.ax.yaxis.set_major_locator(plt.MultipleLocator(2))
     plt.savefig(pngfilename, dpi=400, bbox_inches='tight', transparent=False)
+    plt.close()
     return
 
-plotfes('hist.dat', 'potential.png', 'X', 'Y')
+
+plotfes('bias_100_10.czar.grad.pmf', 'pmf_100_10.png', 'X', 'Y', r'$\gamma_x/\gamma_y=10.0$')
+plotfes('bias_10_100.czar.grad.pmf', 'pmf_10_100.png', 'X', 'Y', r'$\gamma_x/\gamma_y=0.1$')
+plotfes('bias_10_10.czar.grad.pmf', 'pmf_10_10.png', 'X', 'Y', r'$\gamma_x/\gamma_y=1.0$')
