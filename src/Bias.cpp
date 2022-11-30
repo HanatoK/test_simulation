@@ -254,8 +254,8 @@ void BiasWTMeABF2D::updateForce() {
       m_tmp_current_hill.hillEnergyGradients(
         m_tmp_grid_pos, m_bias_mtd.axes(),
         m_tmp_hill_gradient, hill_energy);
-      for (size_t i = 0; i < point_table.size(); ++i) {
-        m_bias_mtd[addr * point_table.size() + i] += -m_tmp_hill_gradient[i];
+      for (size_t j = 0; j < point_table.size(); ++j) {
+        m_bias_mtd[addr * point_table.size() + j] += -m_tmp_hill_gradient[j];
       }
       m_mtd_sum_hills[addr] += -hill_energy;
     }
