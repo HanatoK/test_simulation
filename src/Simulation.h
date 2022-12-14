@@ -12,6 +12,7 @@
 class Simulation {
 private:
   const double conversion_factor = 418.4;
+  int64_t m_step;
   double m_mass;
   double3 m_forces;
   double3 m_velocities;
@@ -23,13 +24,17 @@ private:
 public:
   Simulation(double mass, double temperature = 0,
              double3 positions = double3{0, 0, 0})
-  : m_mass(mass), m_positions(positions), m_temperatue(temperature),
+  : m_step(0), m_mass(mass), m_positions(positions),
+    m_temperatue(temperature),
     m_random_generator(m_random_device()) {
     m_forces = double3{0, 0, 0};
     m_velocities = double3{0, 0, 0};
   }
   double randGaussian() {
     return m_normal_distribution(m_random_generator);
+  }
+  int64_t getStep() const {
+    return m_step;
   }
   double kineticEnergy() const {
     double ek = 0;

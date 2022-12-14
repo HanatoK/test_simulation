@@ -101,7 +101,20 @@ private:
   std::vector<double> biasForce(const std::vector<double>& position) override;
 };
 
-// restraint
-double3 restraintForce(const double3& position);
+class HarmonicWalls {
+public:
+  HarmonicWalls(std::vector<double> lower, std::vector<double> upper, double force_constant);
+  void update_value(const std::vector<double>& position);
+  const std::vector<double>& position() const {return m_position;}
+  double energy() const {return m_energy;}
+  const std::vector<double>& force() const {return m_force;}
+private:
+  std::vector<double> m_lower;
+  std::vector<double> m_upper;
+  double              m_constant;
+  std::vector<double> m_position;
+  std::vector<double> m_force;
+  double m_energy;
+};
 
 #endif // BIAS_H

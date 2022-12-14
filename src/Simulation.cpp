@@ -53,7 +53,7 @@ void Simulation::runLangevinDynamics(
   kineticEnergyCallback(Ek);
   double Ep = potentialFunction(m_positions);
   potentialEnergyCallback(Ep);
-  stepCallback(0);
+  stepCallback(m_step);
   runCallback();
   double3 force = forceFunction(m_positions);
   forceCallback(force);
@@ -68,7 +68,7 @@ void Simulation::runLangevinDynamics(
   const double factor2z = std::sqrt(conversion_factor / (beta() * m_mass)) *
                          std::sqrt(1.0 - std::exp(-2.0 * frictions.z * timestep));
   // BAOAB
-  for (int64_t i = 1; i <= steps; ++i) {
+  for (m_step = 1; m_step <= steps; ++m_step) {
     // update v_{i+1/2}
     m_velocities.x += conversion_factor * 0.5 * timestep * force.x / m_mass;
     m_velocities.y += conversion_factor * 0.5 * timestep * force.y / m_mass;
@@ -91,7 +91,7 @@ void Simulation::runLangevinDynamics(
     kineticEnergyCallback(Ek);
     Ep = potentialFunction(m_positions);
     potentialEnergyCallback(Ep);
-    stepCallback(i);
+    stepCallback(m_step);
     runCallback();
     // update f_{i+1}
     force = forceFunction(m_positions);

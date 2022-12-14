@@ -16,7 +16,10 @@ void BiasedSimulations1() {
   std::vector<Axis> ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep);
+  HarmonicWalls restraint({-7.0, -7.0}, {7.0, 7.0}, 8000.0);
   Reporter reporter(100, "XYZ_10_10_b.traj");
+  std::ofstream ofs_restraint_traj("restraint_10_10.dat");
+  ofs_restraint_traj << "# step x y restraint_energy\n";
   std::ofstream ofs_bias_traj("bias_10_10.dat");
   ofs_bias_traj << "# step x y r_x r_y fb_rx fb_ry\n";
   std::ofstream ofs_hill_traj("bias_10_10.hills");
@@ -27,14 +30,7 @@ void BiasedSimulations1() {
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
       total_steps, timestep, frictions,
-      [&](const double3& r){
-        auto force =  potential.getForces(r);
-        const auto restraint_force = restraintForce(r);
-        force.x += restraint_force.x;
-        force.y += restraint_force.y;
-        force.z += restraint_force.z;
-        return force;
-      },
+      [&](const double3& r){return potential.getForces(r);},
       [&](const double3& r){return potential.getPotential(r);},
       [&](double3& f){
         // apply the biasing force (backward)
@@ -44,15 +40,18 @@ void BiasedSimulations1() {
         // write the hill immediately
         bias.writeHills(ofs_hill_traj);
         bias.applyBiasForce(bias_force);
-        f.x += bias_force[0];
-        f.y += bias_force[1];
+        // add restraint force
+        const auto& restraint_force = restraint.force();
+        f.x += bias_force[0] + restraint_force[0];
+        f.y += bias_force[1] + restraint_force[1];
         reporter.recordForces(f);
       },
       [&](const double3& v){reporter.recordVelocities(v);},
       [&](const double3& r){
         reporter.recordPositions(r);
         // update CVs (forward) and collect CZAR
-        bias.updateCV(std::vector{r.x, r.y});
+        bias.updateCV({r.x, r.y});
+        restraint.update_value({r.x, r.y});
       },
       [&](const double& Ek){reporter.recordKineticEnergy(Ek);},
       [&](const double& Ep){reporter.recordPotentialEnergy(Ep);},
@@ -63,6 +62,11 @@ void BiasedSimulations1() {
       [&](){
         bias.writeTrajectory(ofs_bias_traj);
         bias.writeOutput("bias_10_10_step");
+        const auto step = simulation.getStep();
+        if (step % 100 == 0) {
+          ofs_restraint_traj << fmt::format("  {:>15d} {:15.10f} {:15.10f}\n",
+                                            step, fmt::join(restraint.position(), " "), restraint.energy());
+        }
         reporter.report();
       });
   bias.writeOutput("bias_10_10");

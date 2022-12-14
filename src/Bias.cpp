@@ -354,3 +354,32 @@ void BiasWTMeABF2D::recordStep(const int64_t &step) {
   // then update
   BiasExtendedLagrangianBase::recordStep(step);
 }
+
+HarmonicWalls::HarmonicWalls(
+    std::vector<double> lower, std::vector<double> upper, double force_constant):
+  m_lower(std::move(lower)), m_upper(std::move(upper)), m_constant(force_constant) {
+  if (m_lower.size() != m_upper.size()) {
+    throw std::runtime_error("Invalid config of harmonic walls.");
+  }
+  // maybe need more checks
+  m_position.assign(m_lower.size(), 0);
+  m_force.assign(m_lower.size(), 0);
+  m_energy = 0;
+}
+
+void HarmonicWalls::update_value(const std::vector<double> &position) {
+  m_position = position;
+  m_energy = 0;
+  for (size_t i = 0; i < m_lower.size(); ++i) {
+    if (m_position[i] < m_lower[i]) {
+      m_force[i] = -1.0 * m_constant * (m_position[i] - m_lower[i]);
+      m_energy += 0.5 * m_constant * (m_position[i] - m_lower[i]) * (m_position[i] - m_lower[i]);
+    } else if (m_position[i] > m_upper[i]) {
+      m_force[i] = -1.0 * m_constant * (m_position[i] - m_upper[i]);
+      m_energy += 0.5 * m_constant * (m_position[i] - m_upper[i]) * (m_position[i] - m_upper[i]);
+    } else {
+      m_force[i] = 0;
+      m_energy += 0;
+    }
+  }
+}
