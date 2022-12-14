@@ -357,8 +357,8 @@ void BiasWTMeABF2D::recordStep(const int64_t &step) {
 
 HarmonicWalls::HarmonicWalls(
     std::vector<double> lower, std::vector<double> upper, double force_constant):
-  m_lower(std::move(lower)), m_upper(std::move(upper)), m_constant(force_constant) {
-  if (m_lower.size() != m_upper.size()) {
+    m_lower(std::move(lower)), m_upper(std::move(upper)), m_constants(m_lower.size(), force_constant) {
+  if (m_lower.size() != m_upper.size() || m_lower.size() != m_constants.size()) {
     throw std::runtime_error("Invalid config of harmonic walls.");
   }
   // maybe need more checks
@@ -372,14 +372,26 @@ void HarmonicWalls::update_value(const std::vector<double> &position) {
   m_energy = 0;
   for (size_t i = 0; i < m_lower.size(); ++i) {
     if (m_position[i] < m_lower[i]) {
-      m_force[i] = -1.0 * m_constant * (m_position[i] - m_lower[i]);
-      m_energy += 0.5 * m_constant * (m_position[i] - m_lower[i]) * (m_position[i] - m_lower[i]);
+      m_force[i] = -1.0 * m_constants[i] * (m_position[i] - m_lower[i]);
+      m_energy += 0.5 * m_constants[i] * (m_position[i] - m_lower[i]) * (m_position[i] - m_lower[i]);
     } else if (m_position[i] > m_upper[i]) {
-      m_force[i] = -1.0 * m_constant * (m_position[i] - m_upper[i]);
-      m_energy += 0.5 * m_constant * (m_position[i] - m_upper[i]) * (m_position[i] - m_upper[i]);
+      m_force[i] = -1.0 * m_constants[i] * (m_position[i] - m_upper[i]);
+      m_energy += 0.5 * m_constants[i] * (m_position[i] - m_upper[i]) * (m_position[i] - m_upper[i]);
     } else {
       m_force[i] = 0;
       m_energy += 0;
     }
   }
+}
+
+HarmonicWalls::HarmonicWalls(
+    std::vector<double> lower, std::vector<double> upper, std::vector<double> force_constants):
+    m_lower(std::move(lower)), m_upper(std::move(upper)), m_constants(std::move(force_constants))  {
+  if (m_lower.size() != m_upper.size() || m_lower.size() != m_constants.size()) {
+    throw std::runtime_error("Invalid config of harmonic walls.");
+  }
+  // maybe need more checks
+  m_position.assign(m_lower.size(), 0);
+  m_force.assign(m_lower.size(), 0);
+  m_energy = 0;
 }
