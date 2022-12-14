@@ -53,3 +53,16 @@ target_link_libraries(TestBiased2 Simulation)
 set(TEST3_BIASED_SOURCES ${PROJECT_SOURCE_DIR}/TestBiased3.cpp)
 add_executable(TestBiased3 ${TEST3_BIASED_SOURCES})
 target_link_libraries(TestBiased3 Simulation)
+
+# PCV simulations
+set(PCV_HEADERS ${PROJECT_SOURCE_DIR}/colvar_arithmeticpath.h
+                ${PROJECT_SOURCE_DIR}/PCV.h)
+
+set(PCV_SOURCES ${PROJECT_SOURCE_DIR}/PCV.cpp)
+
+add_library(PathCV SHARED ${PCV_HEADERS} ${PCV_SOURCES})
+target_link_libraries(PathCV fmt::fmt)
+
+set(TEST1_BIASED_PCV_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased1.cpp)
+add_executable(TestPCVBiased1 ${TEST1_BIASED_PCV_SOURCES})
+target_link_libraries(TestPCVBiased1 Simulation PathCV)
