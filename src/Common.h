@@ -26,4 +26,6 @@ almost_equal(T x, T y, int ulp = 2) {
          || std::abs(x - y) < std::numeric_limits<T>::min();
 }
 
+double beta(double temperature);
+
 #endif // COMMON_H

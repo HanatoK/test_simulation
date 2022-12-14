@@ -16,3 +16,7 @@ void splitString(const std::string& data, const std::string& delim, std::vector<
         index = new_index + 1;
     }
 }
+
+double beta(double temperature) {
+  return 1.0 / (temperature * boltzmann_constant);
+}

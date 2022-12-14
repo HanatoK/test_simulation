@@ -19,68 +19,86 @@ public:
   virtual vector<double> getLogDerivative(const vector<double> &pos) const;
 };
 
-// TODO: new hill frequency
-class BiasWTMeABF2D {
+class BiasExtendedLagrangianBase {
 public:
-  BiasWTMeABF2D();
-  BiasWTMeABF2D(const vector<Axis>& ax,
-                const vector<Axis>& mtd_ax,
-                double tau, double kappa,
-                double temperatue, double friction, double timestep,
-                const std::string& hill_traj_filename);
-  ~BiasWTMeABF2D();
+  BiasExtendedLagrangianBase(
+    size_t num_extended_cvs,
+    const std::vector<double>& tau,
+    const std::vector<double>& kappa,
+    const std::vector<double>& temperature,
+    const std::vector<double>& friction,
+    double timestep);
+  virtual ~BiasExtendedLagrangianBase() = default;
   void updateExtendedLagrangian();
-  void applyBiasForce(double3& force);
   double randGaussian();
-  double beta() const;
-  void writeOutput(const string& filename) const;
-  void recordStep(const int64_t& step) {m_step = step;}
-  void updateCV(const double3& position);
-  void writeTrajectory(std::ostream& os) const;
-  double sumHistoryHillsAtPosition(const std::vector<double>& pos) const;
-private:
+  void updateCV(const std::vector<double>& position);
+  virtual void recordStep(const int64_t& step) {m_step = step;}
+  // apply biasing force to the real variable
+  void applyBiasForce(std::vector<double>& force);
+protected:
   bool                    m_first_time;
   int64_t                 m_step;
+  size_t                  m_dof;
   // extended variables
-  double                  m_mass;
-  double3                 m_forces;
-  double3                 m_applied_forces;
-  double3                 m_velocities;
-  double3                 m_positions;
-  double                  m_kappa;
-  double                  m_temperatue;
-  double                  m_friction;
+  std::vector<double>     m_mass;
+  std::vector<double>     m_forces;
+  std::vector<double>     m_bias_force;
+  std::vector<double>     m_applied_forces;
+  std::vector<double>     m_velocities;
+  std::vector<double>     m_positions;
+  std::vector<double>     m_kappa;
+  std::vector<double>     m_temperature;
+  std::vector<double>     m_friction;
   double                  m_timestep;
-  double                  m_factor1;
-  double                  m_factor2;
+  std::vector<double>     m_factor1;
+  std::vector<double>     m_factor2;
   // real variables
-  double3                 m_real_positions;
+  std::vector<double>     m_real_positions;
   // random generator
   random_device           m_random_device;
   mt19937                 m_random_generator;
   normal_distribution<>   m_normal_distribution;
+  // biasing force for the extended variable
+  virtual std::vector<double> biasForce(const std::vector<double>& position) = 0;
+  virtual void updateForce();
+};
+
+class BiasWTMeABF2D: public BiasExtendedLagrangianBase {
+public:
+  BiasWTMeABF2D(const vector<Axis>& ax,
+                const vector<Axis>& mtd_ax,
+                double tau, double kappa,
+                double temperature, double friction, double timestep);
+  ~BiasWTMeABF2D() override;
+  // void updateExtendedLagrangian();
+  void writeOutput(string filename, size_t freq = 100000000) const;
+  void writeTrajectory(std::ostream& os, size_t freq = 100) const;
+  void writeHills(std::ostream& os) const;
+  double sumHistoryHillsAtPosition(const std::vector<double>& pos) const;
+  void recordStep(const int64_t& step) override;
+private:
   // ABF + MTD
   HistogramVector<double> m_bias_abf;
   HistogramVector<double> m_bias_mtd;
   HistogramScalar<double> m_mtd_sum_hills;
   HistogramScalar<size_t> m_count;
-  double3                 m_bias_force;
   Hill                    m_tmp_current_hill;
   int64_t                 m_hill_freq;
   double                  m_hill_initial_height;
   std::vector<double>     m_hill_sigma;
   std::vector<double>     m_tmp_grid_pos;
   std::vector<double>     m_tmp_hill_gradient;
-  std::vector<double>     m_tmp_pos;
-  std::vector<double>     m_tmp_system_f;
+  std::vector<double>     m_abf_bias_force;
+  std::vector<double>     m_mtd_bias_force;
+  double                  m_abf_force_factor;
   // CZAR estimator
   CZARCount               m_zcount;
   HistogramVector<double> m_zgrad;
-  void updateForce();
-  double3 biasForce(const double3& position);
   // MTD hill traj
-  std::ofstream           m_hill_traj;
   std::vector<Hill>       m_history_hills;
+  // override methods
+  void updateForce() override;
+  std::vector<double> biasForce(const std::vector<double>& position) override;
 };
 
 // restraint

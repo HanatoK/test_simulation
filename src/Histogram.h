@@ -417,8 +417,8 @@ public:
   virtual bool writeToStream(std::ofstream &ofs) const override;
   virtual bool writeToFile(const std::string &filename) const;
   virtual std::vector<T> operator()(const std::vector<T> &) const;
-  T &operator[](int);
-  const T &operator[](int) const;
+  T &operator[](size_t);
+  const T &operator[](size_t) const;
   virtual void applyFunction(std::function<T(T)> f);
   virtual void
   generate(std::function<std::vector<T>(const std::vector<double> &)> &func);
@@ -556,12 +556,12 @@ std::vector<T> HistogramVector<T>::operator()(const std::vector<T> &pos) const {
   }
 }
 
-template <typename T> T &HistogramVector<T>::operator[](int addr_mult) {
+template <typename T> T &HistogramVector<T>::operator[](size_t addr_mult) {
   return mData[addr_mult];
 }
 
 template <typename T>
-const T &HistogramVector<T>::operator[](int addr_mult) const {
+const T &HistogramVector<T>::operator[](size_t addr_mult) const {
   return mData[addr_mult];
 }
 

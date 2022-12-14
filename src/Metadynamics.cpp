@@ -11,6 +11,7 @@ Hill::Hill(size_t ndims) {
 void Hill::init(size_t ndims) {
     mCenters.resize(ndims);
     mSigmas.resize(ndims);
+    mHeight = 0.0;
 }
 
 Hill::Hill(const vector<double>& centers, const vector<double>& sigmas, double height) {
