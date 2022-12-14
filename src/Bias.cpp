@@ -307,7 +307,7 @@ double3 restraintForce(const double3& position) {
 
 void BiasWTMeABF2D::writeOutput(string filename, size_t freq) const {
   if (m_step > 0 && m_step % freq == 0) {
-    filename += std::to_string(m_step);
+    filename += "_" + std::to_string(m_step);
     m_count.writeToFile(filename + ".abf.count");
     m_zcount.writeToFile(filename + ".zcount");
     m_mtd_sum_hills.writeToFile(filename + ".mtd");
@@ -333,7 +333,7 @@ void BiasWTMeABF2D::writeOutput(string filename, size_t freq) const {
       const vector<double> log_deriv = m_zcount.getLogDerivative(grid_pos);
       // merge gradients
       for (size_t j = 0; j < grid_pos.size(); ++j) {
-        const double grad_value = -1.0 / beta(m_temperature[i]) * log_deriv[j] + m_zgrad[addr * N + j];
+        const double grad_value = -1.0 / beta(m_temperature[j]) * log_deriv[j] + m_zgrad[addr * N + j];
         ofs_czar_grad << fmt::format(" {:15.10f}", grad_value);
       }
       ofs_czar_grad << '\n';
