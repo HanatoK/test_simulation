@@ -16,8 +16,8 @@ void PCVBiasedSimulations1() {
   // setup bias
   std::vector<Axis> ax{Axis(0.01, 0.99, 98)};
   std::vector<Axis> mtd_ax{Axis(0.01, 0.99, 98)};
-  BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep);
-  HarmonicWalls restraint({0.01, -0.2}, {0.99, 1.0}, {5000.0, 100.0});
+  BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.01*0.01), 300.0, 8.0, timestep);
+  HarmonicWalls restraint({0.01, -0.1}, {0.99, 1.0}, {500000.0, 100.0});
   Reporter reporter(100, "PCV_10_10_b.traj");
   std::ofstream ofs_restraint_traj("PCV_restraint_10_10.dat");
   ofs_restraint_traj << "# step s z restraint_energy\n";
