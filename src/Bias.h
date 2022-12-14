@@ -85,6 +85,7 @@ private:
   Hill                    m_tmp_current_hill;
   int64_t                 m_hill_freq;
   double                  m_hill_initial_height;
+  double                  m_bias_temperature;
   std::vector<double>     m_hill_sigma;
   std::vector<double>     m_tmp_grid_pos;
   std::vector<double>     m_tmp_hill_gradient;

@@ -74,11 +74,14 @@ BiasExtendedLagrangianBase::BiasExtendedLagrangianBase(
    m_timestep{timestep}, m_factor1(m_dof),
    m_factor2(m_dof), m_real_positions(m_dof),
    m_random_generator(m_random_device()) {
+  std::cout << "Initialize extended Lagrangian:\n";
   for (size_t i = 0; i < m_dof; ++i) {
     m_mass[i] = kappa[i] * tau[i] * tau[i]  / (4.0 * std::numbers::pi * std::numbers::pi);
     m_factor1[i] = std::exp(-1.0 * m_friction[i] * m_timestep);
     m_factor2[i] = std::sqrt(1.0 / (beta(m_temperature[i]) * m_mass[i])) *
                    std::sqrt(1.0 - std::exp(-2.0 * m_friction[i] * m_timestep));
+    std::cout << fmt::format("  variable {}: kappa = {:10.5f}, mass = {:10.5f}, temperature = {:10.5f}, friction = {:10.5f}\n",
+                             i, m_kappa[i], m_mass[i], m_temperature[i], m_friction[i]);
   }
 }
 
@@ -146,12 +149,31 @@ BiasWTMeABF2D::BiasWTMeABF2D(
   m_bias_abf(ax, ax.size()), m_bias_mtd(mtd_ax, mtd_ax.size()),
   m_mtd_sum_hills(mtd_ax), m_count(ax),
   m_tmp_current_hill(ax.size()), m_hill_freq(1000),
-  m_hill_initial_height(0.1), m_hill_sigma(ax.size()), m_tmp_grid_pos(ax.size()),
+  m_hill_initial_height(0.1), m_bias_temperature(1000.0),
+  m_hill_sigma(ax.size()), m_tmp_grid_pos(ax.size()),
   m_tmp_hill_gradient(ax.size()), m_abf_bias_force(ax.size(), 0),
   m_mtd_bias_force(ax.size(), 0), m_abf_force_factor(0),
   m_zcount(ax), m_zgrad(ax, ax.size()) {
+  std::cout << "Initialize WTM-eABF calculation:\n";
+  std::cout << "  ABF grid settings on extended Lagrangian:\n";
+  for (size_t i = 0; i < m_dof; ++i) {
+    std::cout << fmt::format("    Axis {}: lower = {:10.5f} ; upper = {:10.5f} ; width = {:10.5f} ; bins = {}\n",
+                             i, m_bias_abf.axes()[i].lowerBound(), m_bias_abf.axes()[i].upperBound(),
+                             m_bias_abf.axes()[i].width(), m_bias_abf.axes()[i].bin());
+  }
+  std::cout << "  Well-tempered metadynamics settings on extended Lagrangian:\n";
+  std::cout << "    Hill initial height: " << m_hill_initial_height << "\n";
+  std::cout << "    New hill frequency: " << m_hill_freq << "\n";
+  std::cout << "    Bias temperature: " << m_bias_temperature << "\n";
   for (size_t i = 0; i < m_dof; ++i) {
     m_hill_sigma[i] = 4.0 * ax[i].width();
+    std::cout << fmt::format("    Hill sigma at variable {}: {}\n", i, m_hill_sigma[i]);
+  }
+  std::cout << "  Well-tempered grid:\n";
+  for (size_t i = 0; i < m_dof; ++i) {
+    std::cout << fmt::format("    Axis {}: lower = {:10.5f} ; upper = {:10.5f} ; width = {:10.5f} ; bins = {}\n",
+                             i, m_bias_mtd.axes()[i].lowerBound(), m_bias_mtd.axes()[i].upperBound(),
+                             m_bias_mtd.axes()[i].width(), m_bias_mtd.axes()[i].bin());
   }
 }
 
@@ -214,8 +236,8 @@ std::vector<double> BiasWTMeABF2D::biasForce(const std::vector<double>& position
       const size_t addr = m_mtd_sum_hills.address(m_tmp_current_hill.mCenters);
       previous_bias_V = -m_mtd_sum_hills[addr];
     }
-    const double bias_temperature = 1000.0;
-    const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * bias_temperature));
+//    const double bias_temperature = 1000.0;
+    const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * m_bias_temperature));
     m_tmp_current_hill.mHeight = well_tempered_factor * m_hill_initial_height;
     // save the current hill
     m_history_hills.push_back(m_tmp_current_hill);
