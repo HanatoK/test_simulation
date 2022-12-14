@@ -149,7 +149,7 @@ BiasWTMeABF2D::BiasWTMeABF2D(
   m_bias_abf(ax, ax.size()), m_bias_mtd(mtd_ax, mtd_ax.size()),
   m_mtd_sum_hills(mtd_ax), m_count(ax),
   m_tmp_current_hill(ax.size()), m_hill_freq(1000),
-  m_hill_initial_height(0.1), m_bias_temperature(1000.0),
+  m_hill_initial_height(0.1), m_bias_temperature(3000.0),
   m_hill_sigma(ax.size()), m_tmp_grid_pos(ax.size()),
   m_tmp_hill_gradient(ax.size()), m_abf_bias_force(ax.size(), 0),
   m_mtd_bias_force(ax.size(), 0), m_abf_force_factor(0),

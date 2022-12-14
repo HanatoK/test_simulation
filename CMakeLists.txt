@@ -66,3 +66,8 @@ target_link_libraries(PathCV fmt::fmt)
 set(TEST1_BIASED_PCV_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased1.cpp)
 add_executable(TestPCVBiased1 ${TEST1_BIASED_PCV_SOURCES})
 target_link_libraries(TestPCVBiased1 Simulation PathCV)
+
+set(TEST_GRADIENTS ${PROJECT_SOURCE_DIR}/TestPCVNumericalGradients.cpp
+                   ${PROJECT_SOURCE_DIR}/Common.cpp)
+add_executable(TestPCVNumericalGradients ${TEST_GRADIENTS})
+target_link_libraries(TestPCVNumericalGradients PathCV)
