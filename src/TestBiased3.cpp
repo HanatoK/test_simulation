@@ -15,7 +15,7 @@ void BiasedSimulations3() {
   // setup bias
   std::vector<Axis> ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
-  BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.05*0.05), 300.0, 8.0, timestep);
+  BiasWTMeABF bias(ax, mtd_ax, 0.1, 300.0 * 0.0019872041 / (0.05 * 0.05), 300.0, 8.0, timestep);
   HarmonicWalls restraint({-7.0, -7.0}, {7.0, 7.0}, 8000.0);
   Reporter reporter(100, "XYZ_10_100_b.traj");
   std::ofstream ofs_restraint_traj("restraint_10_100.dat");

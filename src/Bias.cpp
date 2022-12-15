@@ -138,7 +138,7 @@ void BiasExtendedLagrangianBase::updateForce() {
 }
 
 
-BiasWTMeABF2D::BiasWTMeABF2D(
+BiasWTMeABF::BiasWTMeABF(
   const vector<Axis>& ax, const vector<Axis>& mtd_ax,
   double tau,
   double kappa, double temperatue,
@@ -177,9 +177,9 @@ BiasWTMeABF2D::BiasWTMeABF2D(
   }
 }
 
-BiasWTMeABF2D::~BiasWTMeABF2D() = default;
+BiasWTMeABF::~BiasWTMeABF() = default;
 
-double BiasWTMeABF2D::sumHistoryHillsAtPosition(const std::vector<double>& pos) const {
+double BiasWTMeABF::sumHistoryHillsAtPosition(const std::vector<double>& pos) const {
   double potential = 0;
   const auto& ax = m_bias_mtd.axes();
   for (size_t i = 0; i < m_history_hills.size(); ++i) {
@@ -188,7 +188,7 @@ double BiasWTMeABF2D::sumHistoryHillsAtPosition(const std::vector<double>& pos) 
   return potential;
 }
 
-void BiasWTMeABF2D::updateForce() {
+void BiasWTMeABF::updateForce() {
   // update the system force for extended CVs
   BiasExtendedLagrangianBase::updateForce();
   // ABF on extended Lagrangian
@@ -217,7 +217,7 @@ void BiasWTMeABF2D::updateForce() {
   }
 }
 
-std::vector<double> BiasWTMeABF2D::biasForce(const std::vector<double>& position) {
+std::vector<double> BiasWTMeABF::biasForce(const std::vector<double>& position) {
   // MTD
   if (m_step % m_hill_freq == 0 && m_step > 0) {
     // setup hill
@@ -296,7 +296,7 @@ std::vector<double> BiasWTMeABF2D::biasForce(const std::vector<double>& position
   return force;
 }
 
-void BiasWTMeABF2D::writeHills(std::ostream& os) const {
+void BiasWTMeABF::writeHills(std::ostream& os) const {
   if (m_step > 0 && m_step % m_hill_freq == 0) {
     const auto& last_hill = m_tmp_current_hill;
     os << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f}\n",
@@ -327,7 +327,7 @@ double3 restraintForce(const double3& position) {
   return force;
 }
 
-void BiasWTMeABF2D::writeOutput(string filename, size_t freq) const {
+void BiasWTMeABF::writeOutput(string filename, size_t freq) const {
   if (m_step > 0 && m_step % freq == 0) {
     filename += "_" + std::to_string(m_step);
     m_count.writeToFile(filename + ".abf.count");
@@ -363,7 +363,7 @@ void BiasWTMeABF2D::writeOutput(string filename, size_t freq) const {
   }
 }
 
-void BiasWTMeABF2D::writeTrajectory(std::ostream& os, size_t freq) const {
+void BiasWTMeABF::writeTrajectory(std::ostream& os, size_t freq) const {
   if (m_step % freq == 0) {
     os << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f}\n",
                       m_step, fmt::join(m_real_positions, " "),
@@ -372,7 +372,7 @@ void BiasWTMeABF2D::writeTrajectory(std::ostream& os, size_t freq) const {
   }
 }
 
-void BiasWTMeABF2D::recordStep(const int64_t &step) {
+void BiasWTMeABF::recordStep(const int64_t &step) {
   // then update
   BiasExtendedLagrangianBase::recordStep(step);
 }

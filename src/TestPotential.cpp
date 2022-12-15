@@ -19,7 +19,6 @@ void test_grad(BSPotential& potential, const std::vector<double>& p) {
 
 void dump_potential(BSPotential& potential) {
   std::ofstream ofs("potential.dat");
-//  BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
   double3 point{0, 0, 0};
   double x_lower = -6.0;
   double x_upper = 6.0;

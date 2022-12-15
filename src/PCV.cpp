@@ -11,12 +11,15 @@ using namespace ArithmeticPathCV;
 CVBasedPath::CVBasedPath(const std::string& path_filename) {
   // read path definition
   std::ifstream ifs_path(path_filename.c_str());
+  if (!ifs_path.is_open()) {
+    throw std::runtime_error("Failed to read " + path_filename);
+  }
   std::string line;
   std::vector<std::string> fields;
   while (std::getline(ifs_path, line)) {
     fields.clear();
     splitString(line, " ", fields);
-    if (fields.size() == 0) continue;
+    if (fields.empty()) continue;
     std::vector<double> points(m_num_cvs, 0);
     for (size_t i = 0; i < m_num_cvs; ++i) {
       points[i] = std::stod(fields[i]);

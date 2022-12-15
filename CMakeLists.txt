@@ -66,6 +66,14 @@ set(TEST1_BIASED_PCV_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased1.cpp)
 add_executable(TestPCVBiased1 ${TEST1_BIASED_PCV_SOURCES})
 target_link_libraries(TestPCVBiased1 Simulation PathCV)
 
+set(TEST2_BIASED_PCV_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased2.cpp)
+add_executable(TestPCVBiased2 ${TEST2_BIASED_PCV_SOURCES})
+target_link_libraries(TestPCVBiased2 Simulation PathCV)
+
+set(TEST3_BIASED_PCV_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased3.cpp)
+add_executable(TestPCVBiased3 ${TEST3_BIASED_PCV_SOURCES})
+target_link_libraries(TestPCVBiased3 Simulation PathCV)
+
 # some tests
 set(TEST_GRADIENTS ${PROJECT_SOURCE_DIR}/TestPCVNumericalGradients.cpp
                    ${PROJECT_SOURCE_DIR}/Common.cpp)

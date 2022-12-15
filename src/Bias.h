@@ -63,13 +63,13 @@ protected:
   virtual void updateForce();
 };
 
-class BiasWTMeABF2D: public BiasExtendedLagrangianBase {
+class BiasWTMeABF: public BiasExtendedLagrangianBase {
 public:
-  BiasWTMeABF2D(const vector<Axis>& ax,
-                const vector<Axis>& mtd_ax,
-                double tau, double kappa,
-                double temperature, double friction, double timestep);
-  ~BiasWTMeABF2D() override;
+  BiasWTMeABF(const vector<Axis>& ax,
+              const vector<Axis>& mtd_ax,
+              double tau, double kappa,
+              double temperature, double friction, double timestep);
+  ~BiasWTMeABF() override;
   // void updateExtendedLagrangian();
   void writeOutput(string filename, size_t freq = 100000000) const;
   void writeTrajectory(std::ostream& os, size_t freq = 100) const;

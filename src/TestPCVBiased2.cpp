@@ -11,26 +11,26 @@ const double timestep = 0.0005;
 const double mass = 12.0;
 const int64_t total_steps = 300000000;
 
-// gamma_x == gamma_y
-void PCVBiasedSimulations1(const std::string& path_filename = "../data/path_new3.txt") {
+// gamma_x == 10*gamma_y
+void PCVBiasedSimulations2(const std::string& path_filename = "../data/path_new3.txt") {
   // setup bias
   std::vector<Axis> ax{Axis(0.01, 0.99, 98)};
   std::vector<Axis> mtd_ax{Axis(0.01, 0.99, 98)};
   BiasWTMeABF bias(ax, mtd_ax, 0.1, 300.0 * 0.0019872041 / (0.01 * 0.01), 300.0, 8.0, timestep);
   HarmonicWalls restraint({0.01, -0.1}, {0.99, 1.0}, {1000000.0, 100.0});
-  Reporter reporter(100, "PCV_10_10_b.traj");
-  std::ofstream ofs_restraint_traj("PCV_restraint_10_10.dat");
+  Reporter reporter(100, "PCV_100_10_b.traj");
+  std::ofstream ofs_restraint_traj("PCV_restraint_100_10.dat");
   ofs_restraint_traj << "# step s z restraint_energy\n";
-  std::ofstream ofs_bias_traj("PCV_bias_10_10_pcv.dat");
+  std::ofstream ofs_bias_traj("PCV_bias_100_10_pcv.dat");
   ofs_bias_traj << "# step s r_s fb_s\n";
-  std::ofstream ofs_hill_traj("PCV_bias_10_10_pcv.hills");
+  std::ofstream ofs_hill_traj("PCV_bias_100_10_pcv.hills");
   ofs_hill_traj << "# step s sigma_s height\n";
   BSPotential potential(2.0, 2.2, 1.0 / (300.0 * 0.0019872041));
   PathCV pcv(path_filename);
-  std::ofstream ofs_pcv_traj("PCV_bias_10_10_pcv.traj");
+  std::ofstream ofs_pcv_traj("PCV_bias_100_10_pcv.traj");
   ofs_pcv_traj << "# step pcv_s pcv_z x y dsdx dsdy dzdx dzdy\n";
   Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
-  double3 frictions{10.0, 10.0, 100.0};
+  double3 frictions{100.0, 10.0, 100.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
       total_steps, timestep, frictions,
@@ -79,7 +79,7 @@ void PCVBiasedSimulations1(const std::string& path_filename = "../data/path_new3
       },
       [&](){
         bias.writeTrajectory(ofs_bias_traj);
-        bias.writeOutput("PCV_bias_10_10_step");
+        bias.writeOutput("PCV_bias_100_10_step");
         const auto step = simulation.getStep();
         if (step % 100 == 0) {
           ofs_restraint_traj << fmt::format("  {:>15d} {:15.10f} {:15.10f}\n",
@@ -90,11 +90,11 @@ void PCVBiasedSimulations1(const std::string& path_filename = "../data/path_new3
         }
         reporter.report();
       });
-  bias.writeOutput("PCV_bias_10_10");
+  bias.writeOutput("PCV_bias_100_10");
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) PCVBiasedSimulations1();
-  else PCVBiasedSimulations1(argv[1]);
+  if (argc < 2) PCVBiasedSimulations2();
+  else PCVBiasedSimulations2(argv[1]);
   return 0;
 }
