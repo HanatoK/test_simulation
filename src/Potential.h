@@ -17,4 +17,5 @@ public:
   double getPotential(double3 pos) const;
   double3 getForces(double3 pos) const;
   double3 getGradients(double3 pos) const;
+  double3 getNumericalGradient(double3 pos, double epsilon = 0.00001) const;
 };

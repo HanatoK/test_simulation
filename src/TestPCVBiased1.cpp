@@ -9,7 +9,7 @@
 
 const double timestep = 0.0005;
 const double mass = 12.0;
-const int64_t total_steps = 300000000;
+const int64_t total_steps = 600000000;
 
 // gamma_x == gamma_y
 void PCVBiasedSimulations1() {
@@ -17,7 +17,7 @@ void PCVBiasedSimulations1() {
   std::vector<Axis> ax{Axis(0.01, 0.99, 98)};
   std::vector<Axis> mtd_ax{Axis(0.01, 0.99, 98)};
   BiasWTMeABF2D bias(ax, mtd_ax, 0.1, 300.0*0.0019872041/(0.01*0.01), 300.0, 8.0, timestep);
-  HarmonicWalls restraint({0.01, -0.1}, {0.99, 1.0}, {500000.0, 100.0});
+  HarmonicWalls restraint({0.01, -0.1}, {0.99, 1.0}, {1000000.0, 100.0});
   Reporter reporter(100, "PCV_10_10_b.traj");
   std::ofstream ofs_restraint_traj("PCV_restraint_10_10.dat");
   ofs_restraint_traj << "# step s z restraint_energy\n";
@@ -25,12 +25,12 @@ void PCVBiasedSimulations1() {
   ofs_bias_traj << "# step s r_s fb_s\n";
   std::ofstream ofs_hill_traj("PCV_bias_10_10_pcv.hills");
   ofs_hill_traj << "# step s sigma_s height\n";
-  BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
+  BSPotential potential(2.0, 2.2, 1.0 / (300.0 * 0.0019872041));
   PathCV pcv("../data/path_new3.txt");
   std::ofstream ofs_pcv_traj("PCV_bias_10_10_pcv.traj");
-  ofs_pcv_traj << "# step s z x y\n";
+  ofs_pcv_traj << "# step pcv_s pcv_z x y dsdx dsdy dzdx dzdy\n";
   Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
-  double3 frictions{10.0, 10.0, 10.0};
+  double3 frictions{100.0, 100.0, 100.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
       total_steps, timestep, frictions,
@@ -84,8 +84,9 @@ void PCVBiasedSimulations1() {
         if (step % 100 == 0) {
           ofs_restraint_traj << fmt::format("  {:>15d} {:15.10f} {:15.10f}\n",
                                             step, fmt::join(restraint.position(), " "), restraint.energy());
-          ofs_pcv_traj << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f}\n",
-                                      step, pcv.get_s(), pcv.get_z(), fmt::join(pcv.get_point(), " "));
+          ofs_pcv_traj << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f} {:15.10f} {:15.10f}\n",
+                                      step, pcv.get_s(), pcv.get_z(), fmt::join(pcv.get_point(), " "),
+                                      fmt::join(pcv.get_dsdx(), " "), fmt::join(pcv.get_dzdx(), " "));
         }
         reporter.report();
       });

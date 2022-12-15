@@ -41,3 +41,10 @@ double3 BSPotential::getForces(double3 pos) const {
   grad.z *= -1.0;
   return grad;
 }
+
+double3 BSPotential::getNumericalGradient(double3 pos, double epsilon) const {
+  const double dV_dx = (getPotential(double3{pos.x + epsilon, pos.y, pos.z}) - getPotential(double3{pos.x - epsilon, pos.y, pos.z})) / (2.0 * epsilon);
+  const double dV_dy = (getPotential(double3{pos.x, pos.y + epsilon, pos.z}) - getPotential(double3{pos.x, pos.y - epsilon, pos.z})) / (2.0 * epsilon);
+  const double dV_dz = (getPotential(double3{pos.x, pos.y, pos.z + epsilon}) - getPotential(double3{pos.x, pos.y, pos.z - epsilon})) / (2.0 * epsilon);
+  return double3{dV_dx, dV_dy, dV_dz};
+}

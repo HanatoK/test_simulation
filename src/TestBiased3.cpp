@@ -24,7 +24,7 @@ void BiasedSimulations3() {
   ofs_bias_traj << "# step x y r_x r_y fb_rx fb_ry\n";
   std::ofstream ofs_hill_traj("bias_10_100.hills");
   ofs_hill_traj << "# step x y sigma_x sigma_y height\n";
-  BSPotential potential(2.0, 2.0, 1.0 / (300.0 * 0.0019872041));
+  BSPotential potential(2.0, 2.2, 1.0 / (300.0 * 0.0019872041));
   Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
   double3 frictions{10.0, 100.0, 10.0};
   simulation.initializeVelocities();
