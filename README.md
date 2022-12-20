@@ -70,4 +70,4 @@ to integrate the 2D PMFs. Copy the resultant PMFs to `scripts/` and run `./draw_
 
 [1] [Berezhkovskii, A.; Szabo, A. One-Dimensional Reaction Coordinates for Diffusive Activated Rate Processes in Many Dimensions. The Journal of Chemical Physics 2005, 122 (1), 014503.](https://doi.org/10.1063/1.1818091)
 
-[2] [Branduardi, D.; Gervasio, F. L.; Parrinello, M. From A to B in Free Energy Space. The Journal of Chemical Physics 2007, 126 (5), 054103.]( https://doi.org/10.1063/1.2432340.)
+[2] [Branduardi, D.; Gervasio, F. L.; Parrinello, M. From A to B in Free Energy Space. The Journal of Chemical Physics 2007, 126 (5), 054103.]( https://doi.org/10.1063/1.2432340)
