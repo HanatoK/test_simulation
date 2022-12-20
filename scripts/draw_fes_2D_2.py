@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import matplotlib
 import argparse
+import pandas as pd
 import numpy as np
 from matplotlib.figure import figaspect
 from scipy.interpolate import interp1d
@@ -36,28 +37,31 @@ def plotfes(pmffilename, pngfilename, xtitle, ytitle, title=''):
     # w, h = figaspect(1/1.75)
     # plt.figure(figsize=(w, h))
     # z = np.clip(z, 0, 16.0)
+    path = pd.read_csv('../cmake-build-release/PCV_bias_10_10_pcv.traj', delimiter=r'\s+', comment='#', header=None)
+    path = path[::10]
     binx = len(set(x))
     biny = len(set(y))
     xi = x.reshape(binx, biny)
     yi = y.reshape(binx, biny)
     zi = z.reshape(binx, biny)
     cf = plt.contourf(xi, yi, zi, np.linspace(0, 12, 49), cmap='nipy_spectral')
+    plt.scatter(path[3], path[4], s=0.5, alpha=0.6, color='black')
     plt.xlabel(xtitle)
     plt.ylabel(ytitle)
     #plt.title('Free Energy Surface')
     ax = plt.gca()
     ax.set_title(title)
-    ax.set_xlim(-7, 7)
-    ax.set_ylim(-7, 7)
+    ax.set_xlim(-6, 6)
+    ax.set_ylim(-6, 6)
     ax.tick_params(direction = 'in', which = 'major', length=6.0, width = 1.0, top = True, right = True)
     ax.tick_params(direction = 'in', which = 'minor', length=3.0, width = 1.0, top = True, right = True)
     ax.xaxis.get_major_formatter()._usetex = False
     ax.yaxis.get_major_formatter()._usetex = False
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.xaxis.set_major_locator(plt.MaxNLocator(7))
-    ax.yaxis.set_major_locator(plt.MaxNLocator(7))
-    clb = plt.colorbar()
+    ax.xaxis.set_major_locator(plt.MaxNLocator(6))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(6))
+    clb = plt.colorbar(cf)
     clb.ax.set_title("kcal/mol", fontsize=20, pad=10.0)
     clb.ax.xaxis.get_major_formatter()._usetex = False
     clb.ax.yaxis.get_major_formatter()._usetex = False
@@ -71,6 +75,6 @@ def plotfes(pmffilename, pngfilename, xtitle, ytitle, title=''):
     return
 
 
-plotfes('bias_100_10.czar.grad.pmf', 'pmf_100_10.png', 'X', 'Y', r'$\gamma_x/\gamma_y=10.0$')
-plotfes('bias_10_100.czar.grad.pmf', 'pmf_10_100.png', 'X', 'Y', r'$\gamma_x/\gamma_y=0.1$')
-plotfes('bias_10_10.czar.grad.pmf', 'pmf_10_10.png', 'X', 'Y', r'$\gamma_x/\gamma_y=1.0$')
+plotfes('bias_100_10_300000000.czar.grad.pmf', 'pmf_100_10.png', 'X', 'Y', r'$\gamma_x/\gamma_y=10.0$')
+plotfes('bias_10_100_300000000.czar.grad.pmf', 'pmf_10_100.png', 'X', 'Y', r'$\gamma_x/\gamma_y=0.1$')
+plotfes('bias_10_10_300000000.czar.grad.pmf', 'pmf_10_10.png', 'X', 'Y', r'$\gamma_x/\gamma_y=1.0$')
