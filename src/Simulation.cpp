@@ -87,8 +87,6 @@ void Simulation::runLangevinDynamics(
     m_positions.z += 0.5 * m_velocities.z * timestep;
     // collect CVs and write traj
     positionCallback(m_positions);
-    Ek = kineticEnergy();
-    kineticEnergyCallback(Ek);
     Ep = potentialFunction(m_positions);
     potentialEnergyCallback(Ep);
     stepCallback(m_step);
@@ -100,6 +98,8 @@ void Simulation::runLangevinDynamics(
     m_velocities.x += conversion_factor * 0.5 * timestep * force.x / m_mass;
     m_velocities.y += conversion_factor * 0.5 * timestep * force.y / m_mass;
     m_velocities.z += conversion_factor * 0.5 * timestep * force.z / m_mass;
+    Ek = kineticEnergy();
+    kineticEnergyCallback(Ek);
     velocityCallback(m_velocities);
   }
 }

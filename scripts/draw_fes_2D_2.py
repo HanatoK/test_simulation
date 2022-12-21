@@ -37,15 +37,15 @@ def plotfes(pmffilename, pngfilename, xtitle, ytitle, title=''):
     # w, h = figaspect(1/1.75)
     # plt.figure(figsize=(w, h))
     # z = np.clip(z, 0, 16.0)
-    path = pd.read_csv('../cmake-build-release/PCV_bias_10_10_pcv.traj', delimiter=r'\s+', comment='#', header=None)
-    path = path[::10]
+    # path = pd.read_csv('../cmake-build-release/PCV_bias_10_10_pcv.traj', delimiter=r'\s+', comment='#', header=None)
+    # path = path[::10]
     binx = len(set(x))
     biny = len(set(y))
     xi = x.reshape(binx, biny)
     yi = y.reshape(binx, biny)
     zi = z.reshape(binx, biny)
     cf = plt.contourf(xi, yi, zi, np.linspace(0, 12, 49), cmap='nipy_spectral')
-    plt.scatter(path[3], path[4], s=0.5, alpha=0.6, color='black')
+    # plt.scatter(path[3], path[4], s=0.5, alpha=0.6, color='black')
     plt.xlabel(xtitle)
     plt.ylabel(ytitle)
     #plt.title('Free Energy Surface')

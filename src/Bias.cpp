@@ -90,23 +90,28 @@ double BiasExtendedLagrangianBase::randGaussian() {
 }
 
 void BiasExtendedLagrangianBase::updateExtendedLagrangian() {
-  m_bias_force = biasForce(m_positions);
+  // BAOAB
   for (size_t i = 0; i < m_dof; ++i) {
-    const double c1 = std::sqrt(m_factor1[i]);
-    const double c2 = std::sqrt((1.0-c1*c1)/(beta(m_temperature[i]) * m_mass[i]));
-    // apply bias force
-    m_forces[i] += m_bias_force[i];
     // update v_{i+1/2}
     m_velocities[i] += 0.5 * m_timestep * m_forces[i] / m_mass[i];
-    // Langevin thermostat, half step
-    m_velocities[i] = c1 * m_velocities[i] + c2 * randGaussian();
-    // Langevin thermostat, half step
-    m_velocities[i] = c1 * m_velocities[i] + c2 * randGaussian();
+    // update x_{i+1/2}
+    m_positions[i] += 0.5 * m_velocities[i] * m_timestep;
+    // Langevin thermostat, full step
+    m_velocities[i] = m_factor1[i] * m_velocities[i] + m_factor2[i] * randGaussian();
+    // update x_{i+1}
+    m_positions[i] += 0.5 * m_velocities[i] * m_timestep;
+  }
+  // update f_{i+1}
+  updateForce();
+  // report potential energy here
+  m_bias_force = biasForce(m_positions);
+  for (size_t i = 0; i < m_dof; ++i) {
+    // update f_{i+1}
+    m_forces[i] += m_bias_force[i];
     // update v_{i+1}
     m_velocities[i] += 0.5 * m_timestep * m_forces[i] / m_mass[i];
-    // update x_{i+1}
-    m_positions[i] += m_velocities[i] * m_timestep;
   }
+  // report kinetic energy here
 }
 
 void BiasExtendedLagrangianBase::applyBiasForce(std::vector<double>& force) {
@@ -125,7 +130,7 @@ void BiasExtendedLagrangianBase::updateCV(const std::vector<double>& position) {
     }
     m_first_time = false;
   }
-  updateForce();
+  // updateForce();
 }
 
 void BiasExtendedLagrangianBase::updateForce() {
