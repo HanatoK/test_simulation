@@ -72,6 +72,19 @@ public:
     std::function<void(double&)> potentialEnergyCallback,
     std::function<void(int64_t)> stepCallback,
     std::function<void()> runCallback);
+  void runBrownianDynamics(
+    int64_t steps, const double timestep,
+    const double3& frictions,
+    std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
+    std::function<void(double3&)> forceCallback,
+    std::function<void(double3&)> velocityCallback,
+    std::function<void(double3&)> positionCallback,
+    std::function<void(double&)> kineticEnergyCallback,
+    std::function<void(double&)> potentialEnergyCallback,
+    std::function<void(int64_t)> stepCallback,
+    std::function<void()> runCallback
+  );
 };
 
 class Reporter {

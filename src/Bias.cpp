@@ -158,8 +158,9 @@ BiasWTMeABF::BiasWTMeABF(
   m_hill_sigma(ax.size()), m_tmp_grid_pos(ax.size()),
   m_tmp_hill_gradient(ax.size()), m_abf_bias_force(ax.size(), 0),
   m_mtd_bias_force(ax.size(), 0), m_abf_force_factor(0),
-  m_zcount(ax), m_zgrad(ax, ax.size()) {
+  m_fullsample(200.0), m_zcount(ax), m_zgrad(ax, ax.size()) {
   std::cout << "Initialize WTM-eABF calculation:\n";
+  std::cout << "  ABF fullsamples: " << m_fullsample << "\n";
   std::cout << "  ABF grid settings on extended Lagrangian:\n";
   for (size_t i = 0; i < m_dof; ++i) {
     std::cout << fmt::format("    Axis {}: lower = {:10.5f} ; upper = {:10.5f} ; width = {:10.5f} ; bins = {}\n",
@@ -272,14 +273,13 @@ std::vector<double> BiasWTMeABF::biasForce(const std::vector<double>& position) 
   if (m_bias_mtd.isInGrid(position)) m_mtd_bias_force = m_bias_mtd(position);
   if (m_count.isInGrid(position)) count = m_count(position);
   // abf_bias_force is actually the sum of instantaneous collective force
-  const double fullsample = 200.0;
 //  double abf_force_factor = 0;
-  if (count < fullsample / 2) {
+  if (count < m_fullsample / 2) {
     m_abf_force_factor = 0;
-  } else if (count > fullsample) {
+  } else if (count > m_fullsample) {
     m_abf_force_factor = 1;
   } else {
-    m_abf_force_factor = count / fullsample;
+    m_abf_force_factor = count / m_fullsample;
   }
   if (m_bias_abf.isInGrid(position)) {
     m_abf_bias_force = m_bias_abf(position);

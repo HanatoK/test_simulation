@@ -92,6 +92,7 @@ private:
   std::vector<double>     m_abf_bias_force;
   std::vector<double>     m_mtd_bias_force;
   double                  m_abf_force_factor;
+  double                  m_fullsample;
   // CZAR estimator
   CZARCount               m_zcount;
   HistogramVector<double> m_zgrad;

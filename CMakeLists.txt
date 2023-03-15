@@ -98,6 +98,28 @@ set(TEST3_BIASED_PCV_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased3.cpp)
 add_executable(TestPCVBiased3 ${TEST3_BIASED_PCV_SOURCES})
 target_link_libraries(TestPCVBiased3 Simulation Bias PathCV)
 
+# biased simulations (WTM-eABF along PCV s without tube restraints)
+set(TEST1_BIASED_PCV_NOZ_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased1NoZ.cpp)
+add_executable(TestPCVBiased1NoZ ${TEST1_BIASED_PCV_NOZ_SOURCES})
+target_link_libraries(TestPCVBiased1NoZ Simulation Bias PathCV)
+
+set(TEST2_BIASED_PCV_NOZ_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased2NoZ.cpp)
+add_executable(TestPCVBiased2NoZ ${TEST2_BIASED_PCV_NOZ_SOURCES})
+target_link_libraries(TestPCVBiased2NoZ Simulation Bias PathCV)
+
+set(TEST3_BIASED_PCV_NOZ_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiased3NoZ.cpp)
+add_executable(TestPCVBiased3NoZ ${TEST3_BIASED_PCV_NOZ_SOURCES})
+target_link_libraries(TestPCVBiased3NoZ Simulation Bias PathCV)
+
+# MB potential
+set(TEST_UNBIASED_MB_SOURCES ${PROJECT_SOURCE_DIR}/TestUnbiasedMB.cpp)
+add_executable(TestUnbiasedMB ${TEST_UNBIASED_MB_SOURCES})
+target_link_libraries(TestUnbiasedMB Simulation)
+
+set(TEST_BIASED_MB_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiasedMB.cpp)
+add_executable(TestPCVBiasedMB ${TEST_BIASED_MB_SOURCES})
+target_link_libraries(TestPCVBiasedMB Simulation Bias PathCV)
+
 # some other tests
 set(TEST_GRADIENTS ${PROJECT_SOURCE_DIR}/TestPCVNumericalGradients.cpp
                    ${PROJECT_SOURCE_DIR}/Common.cpp)
