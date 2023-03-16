@@ -83,20 +83,6 @@ private:
   double mPeriodicUpperBound;
 };
 
-struct GridDataPatch {
-  std::vector<double> mCenter;
-  std::vector<double> mLength;
-  double mValue;
-};
-
-struct AxisView {
-  AxisView();
-  int mColumn;
-  Axis mAxis;
-  bool mInPMF;
-  bool mReweightingTo;
-};
-
 // QDebug operator<<(QDebug dbg, const Axis &ax);
 
 class HistogramBase {
@@ -114,29 +100,20 @@ public:
   virtual size_t address(const std::vector<size_t> &idx) const;
   std::vector<double> reverseAddress(size_t address,
                                      bool *inBoundary = nullptr) const;
-  virtual std::pair<size_t, bool> neighbor(const std::vector<double> &position,
-                                           size_t axisIndex,
-                                           bool previous = false) const;
-  virtual std::pair<size_t, bool>
-  neighborByAddress(size_t address, size_t axisIndex,
-                    bool previous = false) const;
-  virtual std::vector<std::pair<size_t, bool>>
-  allNeighbor(const std::vector<double> &position) const;
-  virtual std::vector<std::pair<size_t, bool>>
-  allNeighborByAddress(size_t address) const;
-  virtual std::pair<size_t, bool>
-  neighborByIndex(std::vector<size_t> indexes,
-                  size_t axisIndex, bool previous = false) const;
   size_t histogramSize() const;
   size_t dimension() const;
   const std::vector<Axis> &axes() const;
   const std::vector<std::vector<double>>& pointTable() const;
+  const std::vector<size_t>& pointTableAddr() const {
+    return mPointTableAddr;
+  }
 
 protected:
   size_t mNdim;
   size_t mHistogramSize;
   std::vector<Axis> mAxes;
   std::vector<std::vector<double>> mPointTable;
+  std::vector<size_t> mPointTableAddr;
   std::vector<size_t> mAccu;
   void fillTable();
 };
@@ -157,14 +134,12 @@ public:
   virtual const T operator()(const std::vector<double> &position) const;
   virtual T &operator[](size_t addr);
   virtual const T &operator[](size_t addr) const;
-  virtual void applyFunction(std::function<T(T)> f);
   T sum() const;
   T minimum() const;
   const std::vector<T> &data() const;
   std::vector<T> &data();
   virtual std::vector<T> getDerivative(const std::vector<double> &pos,
                                        bool *inBoundary = nullptr) const;
-  virtual void generate(std::function<T(const std::vector<double> &)> &func);
   virtual bool set(const std::vector<double> &pos, const T &value);
   virtual void merge(const HistogramScalar<T> &source);
 
@@ -198,7 +173,6 @@ bool HistogramScalar<T>::readFromStream(std::ifstream &ifs) {
   std::vector<double> pos(mNdim, 0);
   std::vector<std::string> tmpFields;
   mData.resize(mHistogramSize);
-  size_t dataLines = 0;
   while (std::getline(ifs, line)) {
     tmpFields.clear();
     splitString(line, " ", tmpFields);
@@ -214,14 +188,11 @@ bool HistogramScalar<T>::readFromStream(std::ifstream &ifs) {
         // find the position
         const size_t addr = address(pos);
         mData[addr] = std::stod(tmpFields[mNdim]);
-        ++dataLines;
       }
     } else {
       return false;
     }
   }
-  // std::cout << "HistogramScalar<T>::readFromStream: expect " << mHistogramSize << " lines, read "
-  //           << dataLines << "lines";
   return true;
 }
 
@@ -242,14 +213,11 @@ bool HistogramScalar<T>::writeToStream(std::ofstream &ofs) const {
   bool file_opened = HistogramBase::writeToStream(ofs);
   if (!file_opened)
     return file_opened;
-  std::vector<double> pos(mNdim, 0);
+  // std::vector<double> pos(mNdim, 0);
   for (size_t i = 0; i < mHistogramSize; ++i) {
-    for (size_t j = 0; j < mNdim; ++j) {
-      pos[j] = mPointTable[j][i];
-      ofs << fmt::format(" {:15.10f}", pos[j]);
-    }
+    ofs << fmt::format(" {:15.10f}", fmt::join(mPointTable[i], " "));
     // find the position
-    const size_t addr = address(pos);
+    const size_t& addr = mPointTableAddr[i];
     ofs << fmt::format(" {}", mData[addr]) << '\n';
   }
   // restore flags
@@ -296,13 +264,6 @@ template <typename T> T &HistogramScalar<T>::operator[](size_t addr) {
 template <typename T>
 const T &HistogramScalar<T>::operator[](size_t addr) const {
   return mData[addr];
-}
-
-template <typename T>
-void HistogramScalar<T>::applyFunction(std::function<T(T)> f) {
-  for (size_t i = 0; i < mData.size(); ++i) {
-    mData[i] = f(mData[i]);
-  }
 }
 
 template <typename T> T HistogramScalar<T>::sum() const {
@@ -369,19 +330,6 @@ std::vector<T> HistogramScalar<T>::getDerivative(const std::vector<double> &pos,
 }
 
 template <typename T>
-void HistogramScalar<T>::generate(
-    std::function<T(const std::vector<double> &)> &func) {
-  std::vector<double> pos(mNdim, 0.0);
-  for (size_t i = 0; i < mHistogramSize; ++i) {
-    for (size_t j = 0; j < mNdim; ++j) {
-      pos[j] = mPointTable[j][i];
-    }
-    const size_t addr = address(pos);
-    mData[addr] = func(pos);
-  }
-}
-
-template <typename T>
 bool HistogramScalar<T>::set(const std::vector<double> &pos, const T &value) {
   bool inBoundary = true;
   const size_t addr = address(pos, &inBoundary);
@@ -412,16 +360,14 @@ public:
   HistogramVector();
   HistogramVector(const std::vector<Axis> &, const size_t);
   virtual ~HistogramVector();
-  virtual bool readFromStream(std::ifstream &ifs, const size_t multiplicity = 0);
+  virtual bool readFromStream(std::ifstream &ifs) override;
+  bool readFromStream(std::ifstream &ifs, size_t multiplicity);
   virtual bool readFromFile(const std::string &filename);
   virtual bool writeToStream(std::ofstream &ofs) const override;
   virtual bool writeToFile(const std::string &filename) const;
   virtual std::vector<T> operator()(const std::vector<T> &) const;
   T &operator[](size_t);
   const T &operator[](size_t) const;
-  virtual void applyFunction(std::function<T(T)> f);
-  virtual void
-  generate(std::function<std::vector<T>(const std::vector<double> &)> &func);
   size_t multiplicity() const;
 
 protected:
@@ -445,8 +391,12 @@ template <typename T> HistogramVector<T>::~HistogramVector() {
 }
 
 template <typename T>
-bool HistogramVector<T>::readFromStream(std::ifstream &ifs,
-                                        const size_t multiplicity) {
+bool HistogramVector<T>::readFromStream(std::ifstream &ifs) {
+  return readFromStream(ifs, 0);
+}
+
+template <typename T>
+bool HistogramVector<T>::readFromStream(std::ifstream &ifs, size_t multiplicity) {
   bool file_opened = HistogramBase::readFromStream(ifs);
   if (!file_opened)
     return file_opened;
@@ -517,13 +467,10 @@ bool HistogramVector<T>::writeToStream(std::ofstream &ofs) const {
   bool file_opened = HistogramBase::writeToStream(ofs);
   if (!file_opened)
     return file_opened;
-  std::vector<double> pos(mNdim, 0);
+  // std::vector<double> pos(mNdim, 0);
   for (size_t i = 0; i < mHistogramSize; ++i) {
-    for (size_t j = 0; j < mNdim; ++j) {
-      pos[j] = mPointTable[j][i];
-      ofs << fmt::format(" {:15.10f}", pos[j]);
-    }
-    const size_t addr = address(pos);
+    ofs << fmt::format(" {:15.10f}", fmt::join(mPointTable[i], " "));
+    const size_t& addr = mPointTableAddr[i];
     for (size_t k = 0; k < mMultiplicity; ++k) {
       ofs << fmt::format(" {:15.10f}", mData[addr * mMultiplicity + k]);
     }
@@ -565,49 +512,26 @@ const T &HistogramVector<T>::operator[](size_t addr_mult) const {
   return mData[addr_mult];
 }
 
-template <typename T>
-void HistogramVector<T>::applyFunction(std::function<T(T)> f) {
-  for (size_t i = 0; i < mData.size(); ++i) {
-    mData[i] = f(mData[i]);
-  }
-}
-
-template <typename T>
-void HistogramVector<T>::generate(
-    std::function<std::vector<T>(const std::vector<double> &)> &func) {
-  std::vector<double> pos(mNdim, 0);
-  for (size_t i = 0; i < mHistogramSize; ++i) {
-    for (size_t j = 0; j < mNdim; ++j) {
-      pos[j] = mPointTable[j][i];
-    }
-    const size_t addr = address(pos);
-    const std::vector<T> result = func(pos);
-    for (size_t k = 0; k < mMultiplicity; ++k) {
-      mData[addr + k] = result[k];
-    }
-  }
-}
-
 template <typename T> size_t HistogramVector<T>::multiplicity() const {
   return mMultiplicity;
 }
 
-class HistogramPMF : public HistogramScalar<double> {
-public:
-  HistogramPMF();
-  explicit HistogramPMF(const std::vector<Axis> &ax);
-  void toProbability(HistogramScalar<double> &probability, double kbt) const;
-  void fromProbability(const HistogramScalar<double> &probability, double kbt);
-};
+// class HistogramPMF : public HistogramScalar<double> {
+// public:
+//   HistogramPMF();
+//   explicit HistogramPMF(const std::vector<Axis> &ax);
+//   void toProbability(HistogramScalar<double> &probability, double kbt) const;
+//   void fromProbability(const HistogramScalar<double> &probability, double kbt);
+// };
 
-class HistogramProbability : public HistogramScalar<double> {
-public:
-  HistogramProbability();
-  explicit HistogramProbability(const std::vector<Axis> &ax);
-  virtual ~HistogramProbability();
-  void convertToFreeEnergy(double kbt);
-  HistogramProbability
-  reduceDimension(const std::vector<size_t> &new_dims) const;
-};
+// class HistogramProbability : public HistogramScalar<double> {
+// public:
+//   HistogramProbability();
+//   explicit HistogramProbability(const std::vector<Axis> &ax);
+//   virtual ~HistogramProbability();
+//   void convertToFreeEnergy(double kbt);
+//   HistogramProbability
+//   reduceDimension(const std::vector<size_t> &new_dims) const;
+// };
 
 #endif // HISTOGRAMBASE_H

@@ -2,7 +2,7 @@
 #define BIAS_H
 
 #include "Histogram.h"
-#include "Common.h"
+// #include "Common.h"
 #include "Metadynamics.h"
 #include <random>
 
@@ -87,7 +87,7 @@ private:
   double                  m_hill_initial_height;
   double                  m_bias_temperature;
   std::vector<double>     m_hill_sigma;
-  std::vector<double>     m_tmp_grid_pos;
+  // std::vector<double>     m_tmp_grid_pos;
   std::vector<double>     m_tmp_hill_gradient;
   std::vector<double>     m_abf_bias_force;
   std::vector<double>     m_mtd_bias_force;

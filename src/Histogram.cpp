@@ -165,126 +165,6 @@ std::vector<double> HistogramBase::reverseAddress(size_t address,
   return pos;
 }
 
-std::pair<size_t, bool>
-HistogramBase::neighbor(const std::vector<double> &position, size_t axisIndex,
-                        bool previous) const {
-  const double bin_width_i = mAxes[axisIndex].width();
-  std::vector<double> pos_next(position);
-  if (previous == true) {
-    pos_next[axisIndex] -= bin_width_i;
-  } else {
-    pos_next[axisIndex] += bin_width_i;
-  }
-  bool inBoundary;
-  const size_t addr_neighbor = address(pos_next, &inBoundary);
-  return std::make_pair(addr_neighbor, inBoundary);
-}
-
-std::pair<size_t, bool> HistogramBase::neighborByAddress(size_t address,
-                                                         size_t axisIndex,
-                                                         bool previous) const {
-  if (address >= mHistogramSize)
-    return std::make_pair(0, false);
-  std::vector<size_t> index(mNdim, 0);
-  for (int i = mNdim - 1; i >= 0; --i) {
-    index[i] = static_cast<size_t>(
-        std::floor(static_cast<double>(address) / mAccu[i]));
-    address -= index[i] * mAccu[i];
-  }
-  if (previous == true) { // find previous neighbour
-    if (mAxes[axisIndex].periodic()) {
-      if (index[axisIndex] == 0) {
-        index[axisIndex] = mAxes[axisIndex].mBins - 1;
-      } else {
-        index[axisIndex] -= 1;
-      }
-    } else {
-      if (index[axisIndex] == 0) {
-        return std::make_pair(0, false);
-      } else {
-        index[axisIndex] -= 1;
-      }
-    }
-  } else { // find next neighbour
-    if (mAxes[axisIndex].periodic()) {
-      if (index[axisIndex] == mAxes[axisIndex].mBins - 1) {
-        index[axisIndex] = 0;
-      } else {
-        index[axisIndex] += 1;
-      }
-    } else {
-      if (index[axisIndex] == mAxes[axisIndex].mBins - 1) {
-        return std::make_pair(0, false);
-      } else {
-        index[axisIndex] += 1;
-      }
-    }
-  }
-  size_t neighbour_address = 0;
-  for (size_t i = 0; i < mNdim; ++i) {
-    neighbour_address += index[i] * mAccu[i];
-  }
-  return std::make_pair(neighbour_address, true);
-}
-
-std::vector<std::pair<size_t, bool>>
-HistogramBase::allNeighbor(const std::vector<double> &position) const {
-  std::vector<std::pair<size_t, bool>> results(mNdim * 2);
-  for (size_t i = 0; i < mNdim; ++i) {
-    results[i * 2] = neighbor(position, i, true);
-    results[i * 2 + 1] = neighbor(position, i, false);
-  }
-  return results;
-}
-
-std::vector<std::pair<size_t, bool>>
-HistogramBase::allNeighborByAddress(size_t address) const {
-  std::vector<std::pair<size_t, bool>> results(mNdim * 2);
-  for (size_t i = 0; i < mNdim; ++i) {
-    results[i * 2] = neighborByAddress(address, i, true);
-    results[i * 2 + 1] = neighborByAddress(address, i, false);
-  }
-  return results;
-}
-
-std::pair<size_t, bool> HistogramBase::neighborByIndex(std::vector<size_t> index, size_t axisIndex, bool previous) const
-{
-  if (previous == true) { // find previous neighbour
-    if (mAxes[axisIndex].periodic()) {
-      if (index[axisIndex] == 0) {
-        index[axisIndex] = mAxes[axisIndex].mBins - 1;
-      } else {
-        index[axisIndex] -= 1;
-      }
-    } else {
-      if (index[axisIndex] == 0) {
-        return std::make_pair(0, false);
-      } else {
-        index[axisIndex] -= 1;
-      }
-    }
-  } else { // find next neighbour
-    if (mAxes[axisIndex].periodic()) {
-      if (index[axisIndex] == mAxes[axisIndex].mBins - 1) {
-        index[axisIndex] = 0;
-      } else {
-        index[axisIndex] += 1;
-      }
-    } else {
-      if (index[axisIndex] == mAxes[axisIndex].mBins - 1) {
-        return std::make_pair(0, false);
-      } else {
-        index[axisIndex] += 1;
-      }
-    }
-  }
-  size_t neighbour_address = 0;
-  for (size_t i = 0; i < mNdim; ++i) {
-    neighbour_address += index[i] * mAccu[i];
-  }
-  return std::make_pair(neighbour_address, true);
-}
-
 size_t HistogramBase::histogramSize() const { return mHistogramSize; }
 
 size_t HistogramBase::dimension() const { return mNdim; }
@@ -300,7 +180,7 @@ void HistogramBase::fillTable() {
   for (size_t i = 0; i < mNdim; ++i) {
     middlePoints[i] = mAxes[i].getMiddlePoints();
   }
-  mPointTable = std::vector<std::vector<double>>(mNdim, std::vector<double>(mHistogramSize, 0.0));
+  auto tmpPointTable = std::vector<std::vector<double>>(mNdim, std::vector<double>(mHistogramSize, 0.0));
   for (size_t i = 0; i < mNdim; ++i) {
     size_t repeatAll = 1, repeatOne = 1;
     for (size_t j = i + 1; j < mNdim; ++j) {
@@ -311,13 +191,22 @@ void HistogramBase::fillTable() {
     }
     const size_t in_i_sz = middlePoints[i].size();
     for (size_t l = 0; l < in_i_sz; ++l) {
-      std::fill_n(mPointTable[i].begin() + l * repeatOne, repeatOne,
+      std::fill_n(tmpPointTable[i].begin() + l * repeatOne, repeatOne,
                   middlePoints[i][l]);
     }
     for (size_t k = 0; k < repeatAll - 1; ++k) {
-      std::copy_n(mPointTable[i].begin(), repeatOne * in_i_sz,
-                  mPointTable[i].begin() + repeatOne * in_i_sz * (k + 1));
+      std::copy_n(tmpPointTable[i].begin(), repeatOne * in_i_sz,
+                  tmpPointTable[i].begin() + repeatOne * in_i_sz * (k + 1));
     }
+  }
+  mPointTable.reserve(mHistogramSize);
+  mPointTableAddr.reserve(mHistogramSize);
+  for (size_t i = 0; i < mHistogramSize; ++i) {
+    mPointTable.push_back(std::vector<double>(mNdim, 0));
+    for (size_t j = 0; j < mNdim; ++j) {
+      mPointTable[i][j] = tmpPointTable[j][i];
+    }
+    mPointTableAddr.push_back(address(mPointTable[i]));
   }
 }
 
@@ -495,94 +384,4 @@ bool Axis::periodic() const { return mPeriodic; }
 
 double Axis::period() const {
   return mPeriodicUpperBound - mPeriodicLowerBound;
-}
-
-AxisView::AxisView()
-    : mColumn(0), mAxis(), mInPMF(false), mReweightingTo(false) {}
-
-HistogramPMF::HistogramPMF() : HistogramBase(), HistogramScalar<double>() {}
-
-HistogramPMF::HistogramPMF(const std::vector<Axis> &ax)
-    : HistogramBase(ax), HistogramScalar<double>(ax) {}
-
-void HistogramPMF::toProbability(HistogramScalar<double> &probability,
-                                 double kbt) const {
-  probability = *this;
-  probability.applyFunction(
-      [kbt](double x) { return std::exp(-1.0 * x / kbt); });
-}
-
-void HistogramPMF::fromProbability(const HistogramScalar<double> &probability,
-                                   double kbt) {
-  *this = HistogramPMF(probability.axes());
-  const double norm_factor = probability.sum();
-  if (norm_factor > 0) {
-    for (size_t i = 0; i < mHistogramSize; ++i) {
-      mData[i] = -1.0 * kbt * std::log(probability[i] / norm_factor);
-    }
-    const double minimum = this->minimum();
-    this->applyFunction([minimum](double x) { return x - minimum; });
-  }
-}
-
-HistogramProbability::HistogramProbability()
-    : HistogramBase(), HistogramScalar<double>() {}
-
-HistogramProbability::HistogramProbability(const std::vector<Axis> &ax)
-    : HistogramBase(ax), HistogramScalar<double>(ax) {}
-
-HistogramProbability::~HistogramProbability() {}
-
-void HistogramProbability::convertToFreeEnergy(double kbt) {
-  std::vector<double> f_data(this->data());
-  bool first_non_zero_value = true;
-  double max_val = 0;
-  for (auto &i : f_data) {
-    if (i > 0) {
-      i = -kbt * std::log(i);
-      if (first_non_zero_value) {
-        max_val = i;
-        first_non_zero_value = false;
-      }
-      max_val = std::max(max_val, i);
-    }
-  }
-  const std::vector<double> &p_data = this->data();
-  for (size_t i = 0; i < p_data.size(); ++i) {
-    if (p_data[i] == 0) {
-      f_data[i] = max_val;
-    }
-  }
-  const double min_val = *std::min_element(f_data.begin(), f_data.end());
-  for (auto &i : f_data) {
-    i = i - min_val;
-  }
-  this->mData = f_data;
-}
-
-HistogramProbability HistogramProbability::reduceDimension(
-    const std::vector<size_t> &new_dims) const {
-  std::vector<Axis> new_ax;
-  for (size_t i = 0; i < new_dims.size(); ++i) {
-    new_ax.push_back(this->mAxes[new_dims[i]]);
-  }
-  HistogramProbability new_hist(new_ax);
-  std::vector<double> pos(mNdim, 0.0);
-  std::vector<double> new_pos(new_hist.dimension(), 0.0);
-  for (size_t i = 0; i < mHistogramSize; ++i) {
-    for (size_t j = 0; j < mNdim; ++j) {
-      pos[j] = mPointTable[j][i];
-    }
-    for (size_t k = 0; k < new_hist.dimension(); ++k) {
-      new_pos[k] = pos[new_dims[k]];
-    }
-    bool in_grid = true;
-    bool in_new_grid = true;
-    const size_t addr = address(pos, &in_grid);
-    const size_t new_addr = new_hist.address(new_pos, &in_new_grid);
-    if (in_grid && in_new_grid) {
-      new_hist[new_addr] += (*this)[addr];
-    }
-  }
-  return new_hist;
 }

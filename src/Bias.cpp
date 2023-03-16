@@ -155,7 +155,7 @@ BiasWTMeABF::BiasWTMeABF(
   m_mtd_sum_hills(mtd_ax), m_count(ax),
   m_tmp_current_hill(ax.size()), m_hill_freq(1000),
   m_hill_initial_height(0.1), m_bias_temperature(3000.0),
-  m_hill_sigma(ax.size()), m_tmp_grid_pos(ax.size()),
+  m_hill_sigma(ax.size()),
   m_tmp_hill_gradient(ax.size()), m_abf_bias_force(ax.size(), 0),
   m_mtd_bias_force(ax.size(), 0), m_abf_force_factor(0),
   m_fullsample(200.0), m_zcount(ax), m_zgrad(ax, ax.size()) {
@@ -248,22 +248,18 @@ std::vector<double> BiasWTMeABF::biasForce(const std::vector<double>& position) 
     // save the current hill
     m_history_hills.push_back(m_tmp_current_hill);
     // project hill
-    const vector<vector<double>>& point_table = m_bias_mtd.pointTable();
+    const auto& point_table = m_bias_mtd.pointTable();
+    const auto& point_table_addr = m_bias_mtd.pointTableAddr();
     // TODO: should be parallelized for performance
-    // std::cout << "dimension: " << point_table.size() << std::endl;
-    for (size_t i = 0; i < point_table[0].size(); ++i) {
-      for (size_t j = 0; j < point_table.size(); ++j) {
-        m_tmp_grid_pos[j] = point_table[j][i];
-      }
-      // m_tmp_grid_pos: the grid point in the histogram
-      const size_t addr = m_mtd_sum_hills.address(m_tmp_grid_pos);
+    for (size_t i = 0; i < m_bias_mtd.histogramSize(); ++i) {
+      const size_t& addr = point_table_addr[i];
       double hill_energy = 0;
       // compute hill energy and gradients
       m_tmp_current_hill.hillEnergyGradients(
-          m_tmp_grid_pos, m_bias_mtd.axes(),
+          point_table[i], m_bias_mtd.axes(),
           m_tmp_hill_gradient, hill_energy);
-      for (size_t j = 0; j < point_table.size(); ++j) {
-        m_bias_mtd[addr * point_table.size() + j] += -m_tmp_hill_gradient[j];
+      for (size_t j = 0; j < m_bias_mtd.dimension(); ++j) {
+        m_bias_mtd[addr * m_bias_mtd.dimension() + j] += -m_tmp_hill_gradient[j];
       }
       m_mtd_sum_hills[addr] += -hill_energy;
     }
@@ -348,19 +344,15 @@ void BiasWTMeABF::writeOutput(string filename, size_t freq) const {
     for (size_t j = 0; j < m_zgrad.dimension(); ++j) {
       ofs_czar_grad << m_zgrad.axes()[j].infoHeader() << '\n';
     }
-    const vector<vector<double>> &point_table = m_zgrad.pointTable();
-    const size_t N = m_dof;
-    vector<double> grid_pos(N);
-    for (size_t i = 0; i < point_table[0].size(); ++i) {
-      for (size_t j = 0; j < point_table.size(); ++j) {
-        grid_pos[j] = point_table[j][i];
-        ofs_czar_grad << fmt::format(" {:15.10f}", grid_pos[j]);
-      }
-      size_t addr = m_zgrad.address(grid_pos);
-      const vector<double> log_deriv = m_zcount.getLogDerivative(grid_pos);
+    const auto& point_table = m_zgrad.pointTable();
+    const auto& point_table_addr = m_zgrad.pointTableAddr();
+    for (size_t i = 0; i < m_zcount.histogramSize(); ++i) {
+      ofs_czar_grad << fmt::format(" {:15.10f}", fmt::join(point_table[i], " "));
+      const size_t& addr = point_table_addr[i];
+      const vector<double> log_deriv = m_zcount.getLogDerivative(point_table[i]);
       // merge gradients
-      for (size_t j = 0; j < grid_pos.size(); ++j) {
-        const double grad_value = -1.0 / beta(m_temperature[j]) * log_deriv[j] + m_zgrad[addr * N + j];
+      for (size_t j = 0; j < m_zcount.dimension(); ++j) {
+        const double grad_value = -1.0 / beta(m_temperature[j]) * log_deriv[j] + m_zgrad[addr * m_zcount.dimension() + j];
         ofs_czar_grad << fmt::format(" {:15.10f}", grad_value);
       }
       ofs_czar_grad << '\n';
