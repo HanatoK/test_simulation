@@ -120,9 +120,18 @@ set(TEST_BIASED_MB_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiasedMB.cpp)
 add_executable(TestPCVBiasedMB ${TEST_BIASED_MB_SOURCES})
 target_link_libraries(TestPCVBiasedMB Simulation Bias PathCV)
 
-set(TEST_BIASED_MB_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiasedMBUnphysical.cpp)
-add_executable(TestPCVBiasedMBUnphysical ${TEST_BIASED_MB_SOURCES})
+set(TEST_BIASED_MB_UNPHYSICAL_SOURCES ${PROJECT_SOURCE_DIR}/TestPCVBiasedMBUnphysical.cpp)
+add_executable(TestPCVBiasedMBUnphysical ${TEST_BIASED_MB_UNPHYSICAL_SOURCES})
 target_link_libraries(TestPCVBiasedMBUnphysical Simulation Bias PathCV)
+
+# BD BS potential
+set(TEST1_UNBIASED_BD_SOURCES ${PROJECT_SOURCE_DIR}/TestUnbiased1BD.cpp)
+add_executable(TestUnbiased1BD ${TEST1_UNBIASED_BD_SOURCES})
+target_link_libraries(TestUnbiased1BD Simulation)
+
+set(TEST1_BIASED_BD_SOURCES ${PROJECT_SOURCE_DIR}/TestBiased1BD.cpp)
+add_executable(TestBiased1BD ${TEST1_BIASED_BD_SOURCES})
+target_link_libraries(TestBiased1BD Bias Simulation)
 
 # some other tests
 set(TEST_GRADIENTS ${PROJECT_SOURCE_DIR}/TestPCVNumericalGradients.cpp

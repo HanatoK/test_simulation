@@ -94,3 +94,7 @@ double3 double3::exp(const double3 lhs) {
 double3 double3::sqrt(const double3 lhs) {
   return double3{std::sqrt(lhs.x), std::sqrt(lhs.y), std::sqrt(lhs.z)};
 }
+
+double3 operator/(const double& lhs, double3 rhs) {
+  return double3{lhs / rhs.x, lhs / rhs.y, lhs / rhs.z};
+}

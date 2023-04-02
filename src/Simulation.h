@@ -14,7 +14,6 @@ private:
   const double conversion_factor = 418.4;
   int64_t m_step;
   double m_mass;
-  double3 m_forces;
   double3 m_velocities;
   double3 m_positions;
   double m_temperatue;
@@ -27,7 +26,6 @@ public:
   : m_step(0), m_mass(mass), m_positions(positions),
     m_temperatue(temperature),
     m_random_generator(m_random_device()) {
-    m_forces = double3{0, 0, 0};
     m_velocities = double3{0, 0, 0};
   }
   double randGaussian() {
@@ -83,9 +81,7 @@ public:
     std::function<double3(double3)> forceFunction,
     std::function<double(double3)> potentialFunction,
     std::function<void(double3&)> forceCallback,
-    std::function<void(double3&)> velocityCallback,
     std::function<void(double3&)> positionCallback,
-    std::function<void(double&)> kineticEnergyCallback,
     std::function<void(double&)> potentialEnergyCallback,
     std::function<void(int64_t)> stepCallback,
     std::function<void()> runCallback

@@ -26,6 +26,7 @@ double3 operator*(double3 lhs, const double3& rhs);
 double3 operator*(const double& lhs, double3 rhs);
 double3 operator*(double3 lhs, const double& rhs);
 double3 operator/(double3 lhs, const double& rhs);
+double3 operator/(const double& lhs, double3 rhs);
 
 
 void splitString(const std::string& data, const std::string& delim, std::vector<std::string>& dest);
