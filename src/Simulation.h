@@ -33,6 +33,11 @@ public:
   double randGaussian() {
     return m_normal_distribution(m_random_generator);
   }
+  double3 randGaussian3() {
+    return double3{m_normal_distribution(m_random_generator),
+                   m_normal_distribution(m_random_generator),
+                   m_normal_distribution(m_random_generator)};
+  }
   int64_t getStep() const {
     return m_step;
   }

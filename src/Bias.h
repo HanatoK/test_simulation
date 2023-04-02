@@ -61,6 +61,9 @@ protected:
   // biasing force for the extended variable
   virtual std::vector<double> biasForce(const std::vector<double>& position) = 0;
   virtual void updateForce();
+private:
+  std::vector<double> m_half_timestep;
+  std::vector<double> m_half_timestep_divide_mass;
 };
 
 class BiasWTMeABF: public BiasExtendedLagrangianBase {

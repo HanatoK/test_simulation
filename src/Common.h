@@ -11,7 +11,22 @@ struct double3 {
   double x;
   double y;
   double z;
+  double3& operator+=(const double3& rhs);
+  double3& operator-=(const double3& rhs);
+  double3& operator*=(const double3& rhs);
+  double3& operator*=(const double& rhs);
+  double3& operator/=(const double& rhs);
+  static double3 exp(const double3 lhs);
+  static double3 sqrt(const double3 lhs);
 };
+
+double3 operator+(double3 lhs, const double3& rhs);
+double3 operator-(double3 lhs, const double3& rhs);
+double3 operator*(double3 lhs, const double3& rhs);
+double3 operator*(const double& lhs, double3 rhs);
+double3 operator*(double3 lhs, const double& rhs);
+double3 operator/(double3 lhs, const double& rhs);
+
 
 void splitString(const std::string& data, const std::string& delim, std::vector<std::string>& dest);
 

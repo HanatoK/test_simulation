@@ -73,7 +73,8 @@ BiasExtendedLagrangianBase::BiasExtendedLagrangianBase(
    m_kappa(kappa), m_temperature(temperature), m_friction(friction),
    m_timestep{timestep}, m_factor1(m_dof),
    m_factor2(m_dof), m_real_positions(m_dof),
-   m_random_generator(m_random_device()) {
+   m_random_generator(m_random_device()),
+   m_half_timestep(m_dof), m_half_timestep_divide_mass(m_dof) {
   std::cout << "Initialize extended Lagrangian:\n";
   for (size_t i = 0; i < m_dof; ++i) {
     m_mass[i] = kappa[i] * tau[i] * tau[i]  / (4.0 * std::numbers::pi * std::numbers::pi);
@@ -82,6 +83,10 @@ BiasExtendedLagrangianBase::BiasExtendedLagrangianBase(
                    std::sqrt(1.0 - std::exp(-2.0 * m_friction[i] * m_timestep));
     std::cout << fmt::format("  variable {}: kappa = {:10.5f}, mass = {:10.5f}, temperature = {:10.5f}, friction = {:10.5f}\n",
                              i, m_kappa[i], m_mass[i], m_temperature[i], m_friction[i]);
+  }
+  for (size_t i = 0; i < m_dof; ++i) {
+    m_half_timestep[i] = 0.5 * m_timestep;
+    m_half_timestep_divide_mass[i] = 0.5 * m_timestep / m_mass[i];
   }
 }
 
@@ -93,13 +98,13 @@ void BiasExtendedLagrangianBase::updateExtendedLagrangian() {
   // BAOAB
   for (size_t i = 0; i < m_dof; ++i) {
     // update v_{i+1/2}
-    m_velocities[i] += 0.5 * m_timestep * m_forces[i] / m_mass[i];
+    m_velocities[i] += m_half_timestep_divide_mass[i] * m_forces[i];
     // update x_{i+1/2}
-    m_positions[i] += 0.5 * m_velocities[i] * m_timestep;
+    m_positions[i] += m_half_timestep[i] * m_velocities[i];
     // Langevin thermostat, full step
     m_velocities[i] = m_factor1[i] * m_velocities[i] + m_factor2[i] * randGaussian();
     // update x_{i+1}
-    m_positions[i] += 0.5 * m_velocities[i] * m_timestep;
+    m_positions[i] += m_half_timestep[i] * m_velocities[i];
   }
   // update f_{i+1}
   updateForce();
@@ -109,7 +114,7 @@ void BiasExtendedLagrangianBase::updateExtendedLagrangian() {
     // update f_{i+1}
     m_forces[i] += m_bias_force[i];
     // update v_{i+1}
-    m_velocities[i] += 0.5 * m_timestep * m_forces[i] / m_mass[i];
+    m_velocities[i] += m_half_timestep_divide_mass[i] * m_forces[i];
   }
   // report kinetic energy here
 }
