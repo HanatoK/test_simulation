@@ -34,20 +34,4 @@ public:
     double mHeight;
 };
 
-// sum hills
-class MetaDynamics : public HistogramScalar<double>
-{
-public:
-    MetaDynamics() {}
-    MetaDynamics(const vector<Axis>& ax);
-    void addHill(const Hill& hill);
-    void compute();
-    void computeEnergyGradients(const vector<double>& position, double& potential, vector<double>& gradients) const;
-    void readHillsTrajectory(const string& hill_filename);
-    void writeGradients(const string& filename) const;
-    void writeDummyCounts(const string& filename) const;
-private:
-    vector<Hill> mHills;
-};
-
 #endif

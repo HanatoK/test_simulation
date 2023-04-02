@@ -250,7 +250,6 @@ std::vector<double> BiasWTMeABF::biasForce(const std::vector<double>& position) 
       const size_t addr = m_mtd_sum_hills.address(m_tmp_current_hill.mCenters);
       previous_bias_V = -m_mtd_sum_hills[addr];
     }
-//    const double bias_temperature = 1000.0;
     const double well_tempered_factor = std::exp(-1.0 * previous_bias_V / (boltzmann_constant * m_bias_temperature));
     m_tmp_current_hill.mHeight = well_tempered_factor * m_hill_initial_height;
     // save the current hill
@@ -313,27 +312,6 @@ void BiasWTMeABF::writeHills(std::ostream& os) const {
                       fmt::join(last_hill.mSigmas, " "),
                       last_hill.mHeight);
   }
-}
-
-double3 restraintForce(const double3& position) {
-  // wall boundaries at -6 and 6
-  double3 force{0, 0, 0};
-  const double force_constant = 8000.0;
-  const double x_lower = -7.0;
-  const double x_upper = 7.0;
-  const double y_lower = -7.0;
-  const double y_upper = 7.0;
-  if (position.x < x_lower) {
-    force.x = -1.0 * force_constant * (position.x - x_lower);
-  } else if (position.x > x_upper) {
-    force.x = -1.0 * force_constant * (position.x - x_upper);
-  }
-  if (position.y < y_lower) {
-    force.y = -1.0 * force_constant * (position.y - y_lower);
-  } else if (position.y > y_upper) {
-    force.y = -1.0 * force_constant * (position.y - y_upper);
-  }
-  return force;
 }
 
 void BiasWTMeABF::writeOutput(string filename, size_t freq) const {
