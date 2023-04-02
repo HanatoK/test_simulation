@@ -68,7 +68,12 @@ public:
   BiasWTMeABF(const vector<Axis>& ax,
               const vector<Axis>& mtd_ax,
               double tau, double kappa,
-              double temperature, double friction, double timestep);
+              double temperature, double friction, double timestep,
+              double hill_initial_height = 0.1,
+              int64_t new_hill_frequency = 1000,
+              double bias_temperature = 3000.0,
+              double sigma_width_ratio = 4.0,
+              double fullsample = 200.0);
   ~BiasWTMeABF() override;
   // void updateExtendedLagrangian();
   void writeOutput(string filename, size_t freq = 100000000) const;

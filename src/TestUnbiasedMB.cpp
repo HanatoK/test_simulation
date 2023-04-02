@@ -4,13 +4,13 @@
 
 const double timestep = 0.0005;
 const double mass = 12.0;
-const int64_t total_steps = 300000000;
+const int64_t total_steps = 1000000000;
 
 void UnbiasedSimulationsMB() {
   Reporter reporter(100, "MB_XYZ_10_10.traj");
   MBPotential potential;
   Simulation simulation(mass, 300.0, double3{-0.5, 1.5, 0.0});
-  double3 frictions{10.0, 10.0, 10.0};
+  double3 frictions{100.0, 100.0, 100.0};
   simulation.initializeVelocities();
   simulation.runLangevinDynamics(
       total_steps, timestep, frictions,

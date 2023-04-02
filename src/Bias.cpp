@@ -147,14 +147,17 @@ BiasWTMeABF::BiasWTMeABF(
   const vector<Axis>& ax, const vector<Axis>& mtd_ax,
   double tau,
   double kappa, double temperatue,
-  double friction, double timestep):
+  double friction, double timestep,
+  double hill_initial_height, int64_t new_hill_frequency,
+  double bias_temperature, double sigma_width_ratio,
+  double fullsample):
   BiasExtendedLagrangianBase(
     ax.size(), std::vector(ax.size(), tau), std::vector(ax.size(), kappa),
     std::vector(ax.size(), temperatue), std::vector(ax.size(), friction), timestep),
   m_bias_abf(ax, ax.size()), m_bias_mtd(mtd_ax, mtd_ax.size()),
   m_mtd_sum_hills(mtd_ax), m_count(ax),
-  m_tmp_current_hill(ax.size()), m_hill_freq(1000),
-  m_hill_initial_height(0.1), m_bias_temperature(3000.0),
+  m_tmp_current_hill(ax.size()), m_hill_freq(new_hill_frequency),
+  m_hill_initial_height(hill_initial_height), m_bias_temperature(bias_temperature),
   m_hill_sigma(ax.size()),
   m_tmp_hill_gradient(ax.size()), m_abf_bias_force(ax.size(), 0),
   m_mtd_bias_force(ax.size(), 0), m_abf_force_factor(0),
@@ -172,7 +175,7 @@ BiasWTMeABF::BiasWTMeABF(
   std::cout << "    New hill frequency: " << m_hill_freq << "\n";
   std::cout << "    Bias temperature: " << m_bias_temperature << "\n";
   for (size_t i = 0; i < m_dof; ++i) {
-    m_hill_sigma[i] = 4.0 * ax[i].width();
+    m_hill_sigma[i] = sigma_width_ratio * ax[i].width();
     std::cout << fmt::format("    Hill sigma at variable {}: {}\n", i, m_hill_sigma[i]);
   }
   std::cout << "  Well-tempered grid:\n";
