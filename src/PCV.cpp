@@ -60,16 +60,29 @@ std::vector<double> computeDistances(const std::vector<std::vector<double>>& poi
 
 PathCV::PathCV(const std::string& path_filename): ArithmeticPathBase(), CVBasedPath(path_filename), m_point(m_num_cvs, double()) {
   // call base class for initialization
-  ArithmeticPathBase::initialize(m_num_cvs, m_path_centers.size(), -1.0, std::vector<double>(m_num_cvs, 0), std::vector<double>(m_num_cvs, 1.0));
+  ArithmeticPathBase::initialize(m_num_cvs, m_path_centers.size(), -1.0, std::vector<double>(m_num_cvs, 1.0));
   ArithmeticPathBase::reComputeLambda(computeDistances(m_path_centers));
-}
-
-void PathCV::updateDistanceToReferenceFrames() {
-  CVBasedPath::updateDistanceToReferenceFrames(m_point, frame_element_distances);
+  m_frame_element_distances.resize(m_path_centers.size(), std::vector<double>(m_num_cvs, 0));
+  m_s = 0;
+  m_z = 0;
+  m_grad_s.resize(m_num_cvs, 0);
+  m_grad_z.resize(m_num_cvs, 0);
+  m_dsdx.resize(m_path_centers.size(), std::vector<double>(m_num_cvs, 0));
+  m_dzdx.resize(m_path_centers.size(), std::vector<double>(m_num_cvs, 0));
 }
 
 void PathCV::update_value(double x, double y) {
   m_point[0] = x;
   m_point[1] = y;
-  compute();
+  updateDistanceToReferenceFrames(m_point, m_frame_element_distances);
+  computeValue(m_frame_element_distances, &m_s, &m_z);
+  computeDerivatives(m_frame_element_distances, &m_dsdx, &m_dzdx);
+  m_grad_s.assign(m_num_cvs, 0);
+  m_grad_z.assign(m_num_cvs, 0);
+  for (size_t i = 0; i < m_path_centers.size(); ++i) {
+    for (size_t j = 0; j < m_num_cvs; ++j) {
+      m_grad_s[j] += m_dsdx[i][j];
+      m_grad_z[j] += m_dzdx[i][j];
+    }
+  }
 }
