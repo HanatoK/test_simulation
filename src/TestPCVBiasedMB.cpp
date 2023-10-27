@@ -13,7 +13,7 @@
 
 const double timestep = 0.0005;
 const double mass = 12.0;
-const int64_t total_steps = 1000000000;
+const int64_t total_steps = 500000000;
 
 // gamma_x == gamma_y
 void PCVBiasedSimulationsMB(const std::string& path_filename = "../data/path_new2.txt") {
