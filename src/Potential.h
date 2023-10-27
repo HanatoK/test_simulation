@@ -45,3 +45,12 @@ public:
   double getPotential(double3 pos) const;
   double3 getGradients(double3 pos) const;
 };
+
+class TripleWellAlpha: public Potential {
+private:
+  double m_alpha;
+public:
+  TripleWellAlpha(double alpha = 1.0): m_alpha(alpha) {}
+  double getPotential(double3 pos) const;
+  double3 getGradients(double3 pos) const;
+};

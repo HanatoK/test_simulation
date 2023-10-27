@@ -86,3 +86,31 @@ double3 MBPotential::getGradients(double3 pos) const {
   grad.y *= m_factor;
   return grad;
 }
+
+double TripleWellAlpha::getPotential(double3 pos) const {
+  const auto& x = pos.x;
+  const auto& y = pos.y;
+  const double tmp1 = 3.0 * std::exp(-x * x) * (std::exp(-(y - 1.0 / 3.0) * (y - 1.0 / 3.0) / m_alpha) - std::exp(-(y - 5.0 / 3.0) * (y - 5.0 / 3.0) / m_alpha));
+  const double tmp2 = -5.0 * std::exp(-y * y / m_alpha) * (std::exp(-(x - 1.0) * (x - 1.0)) + std::exp(-(x + 1.0) * (x + 1.0)));
+  const double tmp3 = 0.2 * x * x * x * x;
+  const double tmp4 = 0.2 * (y - 1.0 / 3.0) * (y - 1.0 / 3.0) * (y - 1.0 / 3.0) * (y - 1.0 / 3.0) / (m_alpha * m_alpha);
+  return tmp1 + tmp2 + tmp3 + tmp4;
+}
+
+double3 TripleWellAlpha::getGradients(double3 pos) const {
+  double3 grad;
+  const auto& x = pos.x;
+  const auto& y = pos.y;
+  const double dtmp1_dx = 3.0 * std::exp(-x * x) * (std::exp(-(y - 1.0 / 3.0) * (y - 1.0 / 3.0) / m_alpha) - std::exp(-(y - 5.0 / 3.0) * (y - 5.0 / 3.0) / m_alpha)) * (-2.0 * x);
+  const double dtmp1_dy = 3.0 * std::exp(-x * x) * (std::exp(-(y - 1.0 / 3.0) * (y - 1.0 / 3.0) / m_alpha) * (-2.0 * (y - 1.0 / 3.0) / m_alpha) - std::exp(-(y - 5.0 / 3.0) * (y - 5.0 / 3.0) / m_alpha) * (-2.0 * (y - 5.0 / 3.0) / m_alpha));
+  const double dtmp2_dx = -5.0 * std::exp(-y * y / m_alpha) * (std::exp(-(x - 1.0) * (x - 1.0)) * (-2.0 * (x - 1.0)) + std::exp(-(x + 1.0) * (x + 1.0)) * (-2.0 * (x + 1.0)));
+  const double dtmp2_dy = -5.0 * std::exp(-y * y / m_alpha) * (-2.0 * y / m_alpha) * (std::exp(-(x - 1.0) * (x - 1.0)) + std::exp(-(x + 1.0) * (x + 1.0)));
+  const double dtmp3_dx = 0.2 * 4 * x * x * x;
+  const double dtmp3_dy = 0.0;
+  const double dtmp4_dx = 0.0;
+  const double dtmp4_dy = 0.2 * 4 * (y - 1.0 / 3.0) * (y - 1.0 / 3.0) * (y - 1.0 / 3.0) / (m_alpha * m_alpha);
+  grad.x = dtmp1_dx + dtmp2_dx + dtmp3_dx + dtmp4_dx;
+  grad.y = dtmp1_dy + dtmp2_dy + dtmp3_dy + dtmp4_dy;
+  grad.z = 0;
+  return grad;
+}

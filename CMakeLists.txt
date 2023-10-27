@@ -133,6 +133,11 @@ set(TEST1_BIASED_BD_SOURCES ${PROJECT_SOURCE_DIR}/TestBiased1BD.cpp)
 add_executable(TestBiased1BD ${TEST1_BIASED_BD_SOURCES})
 target_link_libraries(TestBiased1BD Bias Simulation)
 
+# Triple well alpha = 10.0
+set(TEST_TRIPLE_WELL_ALPHA10 ${PROJECT_SOURCE_DIR}/TestTripleWellAlpha10.cpp)
+add_executable(TestTripleWellAlpha10 ${TEST_TRIPLE_WELL_ALPHA10})
+target_link_libraries(TestTripleWellAlpha10 Bias Simulation)
+
 # some other tests
 set(TEST_GRADIENTS ${PROJECT_SOURCE_DIR}/TestPCVNumericalGradients.cpp
                    ${PROJECT_SOURCE_DIR}/Common.cpp)
