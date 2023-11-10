@@ -1,3 +1,6 @@
+#ifndef POTENTIAL_H
+#define POTENTIAL_H
+
 #include "Common.h"
 
 class Potential {
@@ -54,3 +57,5 @@ public:
   double getPotential(double3 pos) const;
   double3 getGradients(double3 pos) const;
 };
+
+#endif // POTENTIAL_H
