@@ -147,3 +147,7 @@ target_link_libraries(TestPCVNumericalGradients PathCV)
 set(TEST_POTENTIAL ${PROJECT_SOURCE_DIR}/TestPotential.cpp)
 add_executable(TestPotential ${TEST_POTENTIAL})
 target_link_libraries(TestPotential Simulation)
+
+set(TEST_HAOHAO ${PROJECT_SOURCE_DIR}/TestHaohao.cpp ${PROJECT_SOURCE_DIR}/Potential_cosine.h ${PROJECT_SOURCE_DIR}/Potential_flatwells.h)
+add_executable(TestHaohao ${TEST_HAOHAO})
+target_link_libraries(TestHaohao Simulation Bias)
