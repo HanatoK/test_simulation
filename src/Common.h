@@ -7,26 +7,25 @@
 
 extern const double boltzmann_constant;
 
-struct double3 {
-  double x;
-  double y;
-  double z;
-  double3& operator+=(const double3& rhs);
-  double3& operator-=(const double3& rhs);
-  double3& operator*=(const double3& rhs);
-  double3& operator*=(const double& rhs);
-  double3& operator/=(const double& rhs);
-  static double3 exp(const double3 lhs);
-  static double3 sqrt(const double3 lhs);
-};
+/* unit conversion:
+  delta_t: ps
+  gamma: g/mol*(ps^-1)
+  potential: kcal/mol
+  force: kcal/(mol*angstrom)
+  r: angstrom
 
-double3 operator+(double3 lhs, const double3& rhs);
-double3 operator-(double3 lhs, const double3& rhs);
-double3 operator*(double3 lhs, const double3& rhs);
-double3 operator*(const double& lhs, double3 rhs);
-double3 operator*(double3 lhs, const double& rhs);
-double3 operator/(double3 lhs, const double& rhs);
-double3 operator/(const double& lhs, double3 rhs);
+  force * delta_t / gamma:
+  =kcal/(mol*angstrom) * ps / (g/mol*(ps^-1))
+  =kcal/(angstrom) * ps*ps / g
+  =4.184 * kJ * ps * ps / (g * angstrom)
+  =4.184 * 1e3 *1e3 g * m^2 * s^-2 * ps^2 / (g*angstrom)
+  =4.184*1e6 * (1e10)^2 * angstrom^2 * s^-2 * ps^2 / (angstrom)
+  =4.184*1e26 * (1e12)^-2 ps^-2 * ps^2 * angstrom
+  =4.184*1e26 * 1e-24 angstrom
+  =418.4 angstrom
+*/
+
+inline static constexpr double conversion_factor = 418.4;
 
 
 void splitString(const std::string& data, const std::string& delim, std::vector<std::string>& dest);
