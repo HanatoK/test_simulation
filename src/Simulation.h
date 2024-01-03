@@ -7,6 +7,7 @@
 #include <random>
 #include <fstream>
 #include <string>
+#include <array>
 #include <fmt/format.h>
 
 // simulation of a single atom
