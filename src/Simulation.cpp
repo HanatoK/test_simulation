@@ -2,53 +2,30 @@
 #include "Common.h"
 
 void Simulation::initializeVelocities() {
-  for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-    const double alpha = std::sqrt(conversion_factor / (beta() * m_atom_group.m_mass[i]));
-    m_atom_group.m_vel_x[i] = randGaussian();
-    m_atom_group.m_vel_y[i] = randGaussian();
-    m_atom_group.m_vel_z[i] = randGaussian();
-    m_atom_group.m_vel_x[i] *= alpha;
-    m_atom_group.m_vel_y[i] *= alpha;
-    m_atom_group.m_vel_z[i] *= alpha;
-  }
+  m_velocities.x = randGaussian();
+  m_velocities.y = randGaussian();
+  m_velocities.z = randGaussian();
+  const double alpha = std::sqrt(conversion_factor / (beta() * m_mass));
+  m_velocities.x *= alpha;
+  m_velocities.y *= alpha;
+  m_velocities.z *= alpha;
 }
 
 void Simulation::runLangevinDynamics(
-    int64_t steps, const double timestep, const double friction,
-    std::function<void(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceFunction,
-    std::function<double(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict)> potentialFunction,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> velocityCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> positionCallback,
-    std::function<void(double&)> kineticEnergyCallback,
-    std::function<void(double&)> potentialEnergyCallback,
-    std::function<void(int64_t)> stepCallback,
-    std::function<void()> runCallback) {
-  // double3 frictions = {friction, friction, friction};
-  const std::vector<double> friction_x(m_atom_group.m_num_atoms, friction);
-  const std::vector<double> friction_y(m_atom_group.m_num_atoms, friction);
-  const std::vector<double> friction_z(m_atom_group.m_num_atoms, friction);
+  int64_t steps, const double timestep,
+  const double friction,
+  std::function<double3(double3)> forceFunction,
+  std::function<double(double3)> potentialFunction,
+  std::function<void(double3&)> forceCallback,
+  std::function<void(double3&)> velocityCallback,
+  std::function<void(double3&)> positionCallback,
+  std::function<void(double&)> kineticEnergyCallback,
+  std::function<void(double&)> potentialEnergyCallback,
+  std::function<void(int64_t)> stepCallback,
+  std::function<void()> runCallback) {
+  double3 frictions = {friction, friction, friction};
   runLangevinDynamics(
-    steps, timestep,
-    friction_x, friction_y, friction_z,
+    steps, timestep, frictions,
     forceFunction,
     potentialFunction,
     forceCallback,
@@ -62,164 +39,105 @@ void Simulation::runLangevinDynamics(
 
 void Simulation::runLangevinDynamics(
   int64_t steps, const double timestep,
-  // const double3& frictions,
-  const std::vector<double>& __restrict friction_x,
-  const std::vector<double>& __restrict friction_y,
-  const std::vector<double>& __restrict friction_z,
-  std::function<void(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceFunction,
-    std::function<double(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict)> potentialFunction,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> velocityCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> positionCallback,
+  const double3& frictions,
+  std::function<double3(double3)> forceFunction,
+  std::function<double(double3)> potentialFunction,
+  std::function<void(double3&)> forceCallback,
+  std::function<void(double3&)> velocityCallback,
+  std::function<void(double3&)> positionCallback,
   std::function<void(double&)> kineticEnergyCallback,
   std::function<void(double&)> potentialEnergyCallback,
   std::function<void(int64_t)> stepCallback,
   std::function<void()> runCallback) {
-  std::vector<double> force_x(m_atom_group.m_num_atoms, 0);
-  std::vector<double> force_y(m_atom_group.m_num_atoms, 0);
-  std::vector<double> force_z(m_atom_group.m_num_atoms, 0);
-  positionCallback(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
+  positionCallback(m_positions);
   double Ek = kineticEnergy();
   kineticEnergyCallback(Ek);
-  double Ep = potentialFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
+  double Ep = potentialFunction(m_positions);
   potentialEnergyCallback(Ep);
   stepCallback(m_step);
-  forceFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z, force_x, force_y, force_z);
-  forceCallback(force_x, force_y, force_z);
   runCallback();
-  velocityCallback(m_atom_group.m_vel_x, m_atom_group.m_vel_y, m_atom_group.m_vel_z);
+  double3 force = forceFunction(m_positions);
+  forceCallback(force);
+  velocityCallback(m_velocities);
+  const auto factor1 = double3::exp(-1.0 * frictions * timestep);
+  const auto factor2 = std::sqrt(conversion_factor / (beta() * m_mass)) *
+                       double3::sqrt(double3{1.0, 1.0, 1.0} - double3::exp(-2.0 * frictions * timestep));
   // BAOAB
   const auto half_timestep = 0.5 * timestep;
-  // const auto half_timestep_divide_mass = half_timestep / m_mass * conversion_factor;
+  const auto half_timestep_divide_mass = half_timestep / m_mass * conversion_factor;
   for (m_step = 1; m_step <= steps; ++m_step) {
-    for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-      const auto factor1_x = std::exp(-1.0 * friction_x[i] * timestep);
-      const auto factor1_y = std::exp(-1.0 * friction_y[i] * timestep);
-      const auto factor1_z = std::exp(-1.0 * friction_z[i] * timestep);
-      const auto factor2_x = std::sqrt(conversion_factor / (beta() * m_atom_group.m_mass[i])) * std::sqrt(1.0 - std::exp(-2.0 * friction_x[i] * timestep));
-      const auto factor2_y = std::sqrt(conversion_factor / (beta() * m_atom_group.m_mass[i])) * std::sqrt(1.0 - std::exp(-2.0 * friction_y[i] * timestep));
-      const auto factor2_z = std::sqrt(conversion_factor / (beta() * m_atom_group.m_mass[i])) * std::sqrt(1.0 - std::exp(-2.0 * friction_z[i] * timestep));
-      const auto half_timestep_divide_mass = half_timestep / m_atom_group.m_mass[i] * conversion_factor;
-      // update v_{i+1/2}
-      m_atom_group.m_vel_x[i] += half_timestep_divide_mass * force_x[i];
-      m_atom_group.m_vel_y[i] += half_timestep_divide_mass * force_y[i];
-      m_atom_group.m_vel_z[i] += half_timestep_divide_mass * force_z[i];
-      // update x_{i+1/2}
-      m_atom_group.m_pos_x[i] += half_timestep * m_atom_group.m_vel_x[i];
-      m_atom_group.m_pos_y[i] += half_timestep * m_atom_group.m_vel_y[i];
-      m_atom_group.m_pos_z[i] += half_timestep * m_atom_group.m_vel_z[i];
-      // Langevin thermostat, full step
-      m_atom_group.m_vel_x[i] = factor1_x * m_atom_group.m_vel_x[i] + factor2_x * randGaussian();
-      m_atom_group.m_vel_y[i] = factor1_y * m_atom_group.m_vel_y[i] + factor2_y * randGaussian();
-      m_atom_group.m_vel_z[i] = factor1_z * m_atom_group.m_vel_z[i] + factor2_z * randGaussian();
-      // Langevin thermostat, full step
-      m_atom_group.m_vel_x[i] = factor1_x * m_atom_group.m_vel_x[i] + factor2_x * randGaussian();
-      m_atom_group.m_vel_y[i] = factor1_y * m_atom_group.m_vel_y[i] + factor2_y * randGaussian();
-      m_atom_group.m_vel_z[i] = factor1_z * m_atom_group.m_vel_z[i] + factor2_z * randGaussian();
-      // update x_{i+1}
-      m_atom_group.m_pos_x[i] += half_timestep * m_atom_group.m_vel_x[i];
-      m_atom_group.m_pos_y[i] += half_timestep * m_atom_group.m_vel_y[i];
-      m_atom_group.m_pos_z[i] += half_timestep * m_atom_group.m_vel_z[i];
-    }
+    // update v_{i+1/2}
+    m_velocities += half_timestep_divide_mass * force;
+    // update x_{i+1/2}
+    m_positions += half_timestep * m_velocities;
+    // Langevin thermostat, full step
+    m_velocities = factor1 * m_velocities + factor2 * randGaussian3();
+    // update x_{i+1}
+    m_positions += half_timestep * m_velocities;
     // collect CVs and write traj
-    positionCallback(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
-    Ep = potentialFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
+    positionCallback(m_positions);
+    Ep = potentialFunction(m_positions);
     potentialEnergyCallback(Ep);
     stepCallback(m_step);
+    runCallback();
     // update f_{i+1}
-    forceFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z, force_x, force_y, force_z);
-    forceCallback(force_x, force_y, force_z);
-    for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-      const auto half_timestep_divide_mass = half_timestep / m_atom_group.m_mass[i] * conversion_factor;
-      // update v_{i+1}
-      m_atom_group.m_vel_x[i] += half_timestep_divide_mass * force_x[i];
-      m_atom_group.m_vel_y[i] += half_timestep_divide_mass * force_y[i];
-      m_atom_group.m_vel_z[i] += half_timestep_divide_mass * force_z[i];
-    }
+    force = forceFunction(m_positions);
+    forceCallback(force);
+    // update v_{i+1}
+    m_velocities += half_timestep_divide_mass * force;
     Ek = kineticEnergy();
     kineticEnergyCallback(Ek);
-    runCallback();
-    velocityCallback(m_atom_group.m_vel_x, m_atom_group.m_vel_y, m_atom_group.m_vel_z);
+    velocityCallback(m_velocities);
   }
 }
 
 void Simulation::runBrownianDynamics(
-  int64_t steps, const double timestep,
-  const std::vector<double>& friction_x,
-  const std::vector<double>& friction_y,
-  const std::vector<double>& friction_z,
-  std::function<void(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceFunction,
-    std::function<double(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict)> potentialFunction,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> positionCallback,
-  std::function<void(double&)> potentialEnergyCallback,
-  std::function<void(int64_t)> stepCallback,
-  std::function<void()> runCallback) {
-  std::vector<double> force_x(m_atom_group.m_num_atoms, 0);
-  std::vector<double> force_y(m_atom_group.m_num_atoms, 0);
-  std::vector<double> force_z(m_atom_group.m_num_atoms, 0);
-  positionCallback(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
-  double Ep = potentialFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
+    int64_t steps, const double timestep,
+    const double3& frictions,
+    std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
+    std::function<void(double3&)> forceCallback,
+    std::function<void(double3&)> positionCallback,
+    std::function<void(double&)> potentialEnergyCallback,
+    std::function<void(int64_t)> stepCallback,
+    std::function<void()> runCallback
+  ) {
+  positionCallback(m_positions);
+  double Ep = potentialFunction(m_positions);
   potentialEnergyCallback(Ep);
   stepCallback(m_step);
-  forceFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z, force_x, force_y, force_z);
-  forceCallback(force_x, force_y, force_z);
   runCallback();
-  // const auto inv_gamma = timestep / (m_mass * frictions) * conversion_factor;
-  // const auto factor = std::sqrt(2.0 / beta()) * double3::sqrt(inv_gamma);
+  double3 force = forceFunction(m_positions);
+  forceCallback(force);
+  /* unit conversion:
+    delta_t: ps
+    gamma: g/mol*(ps^-1)
+    potential: kcal/mol
+    force: kcal/(mol*angstrom)
+    r: angstrom
+
+    force * delta_t / gamma:
+    =kcal/(mol*angstrom) * ps / (g/mol*(ps^-1))
+    =kcal/(angstrom) * ps*ps / g
+    =4.184 * kJ * ps * ps / (g * angstrom)
+    =4.184 * 1e3 *1e3 g * m^2 * s^-2 * ps^2 / (g*angstrom)
+    =4.184*1e6 * (1e10)^2 * angstrom^2 * s^-2 * ps^2 / (angstrom)
+    =4.184*1e26 * (1e12)^-2 ps^-2 * ps^2 * angstrom
+    =4.184*1e26 * 1e-24 angstrom
+    =418.4 angstrom
+    */
+  const auto inv_gamma = timestep / (m_mass * frictions) * conversion_factor;
+  const auto factor = std::sqrt(2.0 / beta()) * double3::sqrt(inv_gamma);
   for (m_step = 1; m_step <= steps; ++m_step) {
-    for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-      const auto inv_gamma_x = timestep / (m_atom_group.m_mass[i] * friction_x[i]) * conversion_factor;
-      const auto inv_gamma_y = timestep / (m_atom_group.m_mass[i] * friction_y[i]) * conversion_factor;
-      const auto inv_gamma_z = timestep / (m_atom_group.m_mass[i] * friction_z[i]) * conversion_factor;
-      const auto factor_x = std::sqrt(2.0 / beta()) * std::sqrt(inv_gamma_x);
-      const auto factor_y = std::sqrt(2.0 / beta()) * std::sqrt(inv_gamma_y);
-      const auto factor_z = std::sqrt(2.0 / beta()) * std::sqrt(inv_gamma_z);
-      // update x_{i+1}
-      m_atom_group.m_pos_x[i] += inv_gamma_x * force_x[i] + factor_x * randGaussian();
-      m_atom_group.m_pos_y[i] += inv_gamma_y * force_y[i] + factor_y * randGaussian();
-      m_atom_group.m_pos_z[i] += inv_gamma_z * force_z[i] + factor_z * randGaussian();
-    }
-    positionCallback(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
-    Ep = potentialFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z);
+    // update x_{i+1}
+    m_positions += inv_gamma * force + factor * randGaussian3();
+    positionCallback(m_positions);
+    Ep = potentialFunction(m_positions);
     potentialEnergyCallback(Ep);
     stepCallback(m_step);
-    // update f_{i+1}
-    forceFunction(m_atom_group.m_pos_x, m_atom_group.m_pos_y, m_atom_group.m_pos_z, force_x, force_y, force_z);
-    forceCallback(force_x, force_y, force_z);
     runCallback();
+    // update f_{i+1}
+    force = forceFunction(m_positions);
+    forceCallback(force);
   }
 }

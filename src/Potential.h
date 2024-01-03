@@ -1,37 +1,17 @@
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
-#include <vector>
+#include "Common.h"
 
 class Potential {
 public:
   Potential() = default;
   virtual ~Potential() = default;
-  virtual double getPotential(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z) const = 0;
-  virtual void getGradients(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z,
-    std::vector<double>& __restrict pos_x_grad,
-    std::vector<double>& __restrict pos_y_grad,
-    std::vector<double>& __restrict pos_z_grad) const = 0;
-  virtual void getForces(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z,
-    std::vector<double>& __restrict f_x,
-    std::vector<double>& __restrict f_y,
-    std::vector<double>& __restrict f_z) const final;
-  virtual void getNumericalGradient(
-    std::vector<double> pos_x,
-    std::vector<double> pos_y,
-    std::vector<double> pos_z,
-    std::vector<double>& __restrict pos_x_grad,
-    std::vector<double>& __restrict pos_y_grad,
-    std::vector<double>& __restrict pos_z_grad, double epsilon = 0.00001) const final;
+  virtual double getPotential(double3 pos) const = 0;
+  virtual double3 getGradients(double3 pos) const = 0;
+  virtual double3 getForces(double3 pos) const;
+  virtual double3 getNumericalGradient(
+    double3 pos, double epsilon = 0.00001) const final;
 };
 
 class BSPotential: public Potential {
@@ -48,19 +28,8 @@ public:
     Potential(), m_omega(omega), m_x0(x0), m_beta(beta),
     m_big_omega_square(1.01 * omega * omega),
     m_Delta(omega * omega * x0 * x0 / 4.0) {}
-  double getPotential(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z
-  ) const override;
-  void getGradients(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z,
-    std::vector<double>& __restrict pos_x_grad,
-    std::vector<double>& __restrict pos_y_grad,
-    std::vector<double>& __restrict pos_z_grad
-  ) const override;
+  double getPotential(double3 pos) const;
+  double3 getGradients(double3 pos) const;
 };
 
 class MBPotential: public Potential {
@@ -76,19 +45,8 @@ private:
   void subterm_dxdy_i(double x, double y, size_t i, double& dx, double& dy) const;
 public:
   MBPotential(double factor = 1.0 / 20.0): Potential(), m_factor(factor) {}
-  double getPotential(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z
-  ) const override;
-  void getGradients(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z,
-    std::vector<double>& __restrict pos_x_grad,
-    std::vector<double>& __restrict pos_y_grad,
-    std::vector<double>& __restrict pos_z_grad
-  ) const override;
+  double getPotential(double3 pos) const;
+  double3 getGradients(double3 pos) const;
 };
 
 class TripleWellAlpha: public Potential {
@@ -96,19 +54,8 @@ private:
   double m_alpha;
 public:
   TripleWellAlpha(double alpha = 1.0): m_alpha(alpha) {}
-  double getPotential(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z
-  ) const override;
-  void getGradients(
-    const std::vector<double>& __restrict pos_x,
-    const std::vector<double>& __restrict pos_y,
-    const std::vector<double>& __restrict pos_z,
-    std::vector<double>& __restrict pos_x_grad,
-    std::vector<double>& __restrict pos_y_grad,
-    std::vector<double>& __restrict pos_z_grad
-  ) const override;
+  double getPotential(double3 pos) const;
+  double3 getGradients(double3 pos) const;
 };
 
 #endif // POTENTIAL_H

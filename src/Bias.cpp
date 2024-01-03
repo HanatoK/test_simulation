@@ -295,9 +295,9 @@ std::vector<double> BiasWTMeABF::biasForce(const std::vector<double>& position) 
   }
   // report the current step
   if (m_step % 1000 == 0) {
-    std::cout << fmt::format("step {:10d}: abf force: {:12.5e}, "
+    std::cout << fmt::format("step {:10d}: abf force: {:15.10f}, "
                              "abf scaling factor: {:10.5f} ; "
-                             "mtd force: {:12.5e}\n",
+                             "mtd force: {:15.10f}\n",
                              m_step, fmt::join(m_abf_bias_force, " "),
                              m_abf_force_factor, fmt::join(m_mtd_bias_force, " "));
   }
@@ -307,7 +307,7 @@ std::vector<double> BiasWTMeABF::biasForce(const std::vector<double>& position) 
 void BiasWTMeABF::writeHills(std::ostream& os) const {
   if (m_step > 0 && m_step % m_hill_freq == 0) {
     const auto& last_hill = m_tmp_current_hill;
-    os << fmt::format(" {:>10d} {:12.5e} {:12.5e} {:12.5e}\n",
+    os << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f}\n",
                       m_step, fmt::join(last_hill.mCenters, " "),
                       fmt::join(last_hill.mSigmas, " "),
                       last_hill.mHeight);
@@ -333,13 +333,13 @@ void BiasWTMeABF::writeOutput(string filename, size_t freq) const {
     const auto& point_table = m_zgrad.pointTable();
     const auto& point_table_addr = m_zgrad.pointTableAddr();
     for (size_t i = 0; i < m_zcount.histogramSize(); ++i) {
-      ofs_czar_grad << fmt::format(" {:17.10e}", fmt::join(point_table[i], " "));
+      ofs_czar_grad << fmt::format(" {:15.10f}", fmt::join(point_table[i], " "));
       const size_t& addr = point_table_addr[i];
       const vector<double> log_deriv = m_zcount.getLogDerivative(point_table[i]);
       // merge gradients
       for (size_t j = 0; j < m_zcount.dimension(); ++j) {
         const double grad_value = -1.0 / beta(m_temperature[j]) * log_deriv[j] + m_zgrad[addr * m_zcount.dimension() + j];
-        ofs_czar_grad << fmt::format(" {:17.10e}", grad_value);
+        ofs_czar_grad << fmt::format(" {:15.10f}", grad_value);
       }
       ofs_czar_grad << '\n';
     }
@@ -348,7 +348,7 @@ void BiasWTMeABF::writeOutput(string filename, size_t freq) const {
 
 void BiasWTMeABF::writeTrajectory(std::ostream& os, size_t freq) const {
   if (m_step % freq == 0) {
-    os << fmt::format(" {:>10d} {:12.5e} {:12.5e} {:12.5e}\n",
+    os << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f}\n",
                       m_step, fmt::join(m_real_positions, " "),
                       fmt::join(m_positions, " "),
                       fmt::join(m_bias_force, " "));

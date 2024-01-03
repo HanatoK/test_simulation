@@ -215,7 +215,7 @@ bool HistogramScalar<T>::writeToStream(std::ofstream &ofs) const {
     return file_opened;
   // std::vector<double> pos(mNdim, 0);
   for (size_t i = 0; i < mHistogramSize; ++i) {
-    ofs << fmt::format(" {:17.10e}", fmt::join(mPointTable[i], " "));
+    ofs << fmt::format(" {:15.10f}", fmt::join(mPointTable[i], " "));
     // find the position
     const size_t& addr = mPointTableAddr[i];
     ofs << fmt::format(" {}", mData[addr]) << '\n';
@@ -469,10 +469,10 @@ bool HistogramVector<T>::writeToStream(std::ofstream &ofs) const {
     return file_opened;
   // std::vector<double> pos(mNdim, 0);
   for (size_t i = 0; i < mHistogramSize; ++i) {
-    ofs << fmt::format(" {:17.10e}", fmt::join(mPointTable[i], " "));
+    ofs << fmt::format(" {:15.10f}", fmt::join(mPointTable[i], " "));
     const size_t& addr = mPointTableAddr[i];
     for (size_t k = 0; k < mMultiplicity; ++k) {
-      ofs << fmt::format(" {:17.10e}", mData[addr * mMultiplicity + k]);
+      ofs << fmt::format(" {:15.10f}", mData[addr * mMultiplicity + k]);
     }
     ofs << '\n';
   }

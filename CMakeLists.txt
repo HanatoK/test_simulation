@@ -20,7 +20,6 @@ set(COMMON_SOURCES ${PROJECT_SOURCE_DIR}/Common.cpp)
 
 set(SIMULATION_HEADERS ${PROJECT_SOURCE_DIR}/Potential.h
                        ${PROJECT_SOURCE_DIR}/Simulation.h
-                       ${PROJECT_SOURCE_DIR}/AtomGroup.h
 )
 
 set(SIMULATION_SOURCES ${PROJECT_SOURCE_DIR}/Potential.cpp

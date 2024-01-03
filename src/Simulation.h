@@ -2,45 +2,48 @@
 #define SIMULATION_H
 
 #include "Common.h"
-#include "AtomGroup.h"
 #include <functional>
 #include <random>
+#include <iostream>
 #include <fstream>
-#include <string>
 #include <fmt/format.h>
 
 // simulation of a single atom
 class Simulation {
 private:
+  const double conversion_factor = 418.4;
   int64_t m_step;
-  AtomGroup& m_atom_group;
+  double m_mass;
+  double3 m_velocities;
+  double3 m_positions;
   double m_temperatue;
   std::random_device m_random_device;
   std::mt19937 m_random_generator;
   std::normal_distribution<> m_normal_distribution;
 public:
-  Simulation(AtomGroup& atom_group, double temperature = 0)
-  : m_step(0), m_atom_group(atom_group),
+  Simulation(double mass, double temperature = 0,
+             double3 positions = double3{0, 0, 0})
+  : m_step(0), m_mass(mass), m_positions(positions),
     m_temperatue(temperature),
     m_random_generator(m_random_device()) {
+    m_velocities = double3{0, 0, 0};
   }
   double randGaussian() {
     return m_normal_distribution(m_random_generator);
+  }
+  double3 randGaussian3() {
+    return double3{m_normal_distribution(m_random_generator),
+                   m_normal_distribution(m_random_generator),
+                   m_normal_distribution(m_random_generator)};
   }
   int64_t getStep() const {
     return m_step;
   }
   double kineticEnergy() const {
     double ek = 0;
-    for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-      double ek_i = 0;
-      ek_i += m_atom_group.m_vel_x[i] * m_atom_group.m_vel_x[i];
-      ek_i += m_atom_group.m_vel_y[i] * m_atom_group.m_vel_y[i];
-      ek_i += m_atom_group.m_vel_z[i] * m_atom_group.m_vel_z[i];
-      ek_i *= m_atom_group.m_mass[i];
-      ek += ek_i;
-    }
-    ek *= 0.5;
+    ek += (m_velocities.x * m_velocities.x +
+           m_velocities.y * m_velocities.y +
+           m_velocities.z * m_velocities.z) * m_mass * 0.5;
     // convert to kcal/mol
     return ek / conversion_factor;
   }
@@ -50,29 +53,11 @@ public:
   void initializeVelocities();
   void runLangevinDynamics(
     int64_t steps, const double timestep, const double friction,
-    std::function<void(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceFunction,
-    std::function<double(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict)> potentialFunction,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> velocityCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> positionCallback,
+    std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
+    std::function<void(double3&)> forceCallback,
+    std::function<void(double3&)> velocityCallback,
+    std::function<void(double3&)> positionCallback,
     std::function<void(double&)> kineticEnergyCallback,
     std::function<void(double&)> potentialEnergyCallback,
     std::function<void(int64_t)> stepCallback,
@@ -80,134 +65,66 @@ public:
   // allow anisotropic diffusivities
   void runLangevinDynamics(
     int64_t steps, const double timestep,
-    // const double3& frictions,
-    const std::vector<double>& __restrict friction_x,
-    const std::vector<double>& __restrict friction_y,
-    const std::vector<double>& __restrict friction_z,
-    std::function<void(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceFunction,
-    std::function<double(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict)> potentialFunction,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> velocityCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> positionCallback,
+    const double3& frictions,
+    std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
+    std::function<void(double3&)> forceCallback,
+    std::function<void(double3&)> velocityCallback,
+    std::function<void(double3&)> positionCallback,
     std::function<void(double&)> kineticEnergyCallback,
     std::function<void(double&)> potentialEnergyCallback,
     std::function<void(int64_t)> stepCallback,
     std::function<void()> runCallback);
   void runBrownianDynamics(
     int64_t steps, const double timestep,
-    const std::vector<double>& friction_x,
-    const std::vector<double>& friction_y,
-    const std::vector<double>& friction_z,
-    std::function<void(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceFunction,
-    std::function<double(
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict,
-      const std::vector<double>& __restrict)> potentialFunction,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> forceCallback,
-    std::function<void(
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict,
-      std::vector<double>& __restrict)> positionCallback,
+    const double3& frictions,
+    std::function<double3(double3)> forceFunction,
+    std::function<double(double3)> potentialFunction,
+    std::function<void(double3&)> forceCallback,
+    std::function<void(double3&)> positionCallback,
     std::function<void(double&)> potentialEnergyCallback,
     std::function<void(int64_t)> stepCallback,
-    std::function<void()> runCallback);
+    std::function<void()> runCallback
+  );
 };
 
 class Reporter {
 private:
-  // double3 m_forces;
-  const std::vector<double>* m_f_x;
-  const std::vector<double>* m_f_y;
-  const std::vector<double>* m_f_z;
-  const AtomGroup& m_atom_group;
+  double3 m_forces;
+  double3 m_velocities;
+  double3 m_positions;
   double m_kineticEnergy;
   double m_potentialEnergy;
   int64_t m_stride;
   int64_t m_step;
   std::ofstream m_ofs_trajectory;
 public:
-  Reporter(int64_t stride, const AtomGroup& atom_group, const std::string& outputname):
-    m_atom_group(atom_group),
+  Reporter(int64_t stride, const std::string& outputname):
+    m_forces{0, 0, 0},
+    m_velocities{0, 0, 0},
+    m_positions{0, 0, 0},
     m_kineticEnergy(0),
     m_potentialEnergy(0),
     m_stride(stride),
     m_step(0) {
     m_ofs_trajectory.open(outputname.c_str());
-    m_ofs_trajectory << fmt::format("#{:>10s} ", "step");
-    for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-      m_ofs_trajectory << fmt::format("{:>12s} ", "x_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "y_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "z_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "v_x_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "v_y_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "v_z_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "f_x_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "f_y_" + std::to_string(i))
-                       << fmt::format("{:>12s} ", "f_z_" + std::to_string(i));
-    }
-    m_ofs_trajectory << fmt::format("{:>12s} {:>12s}\n", "Ek", "Ep");
+    m_ofs_trajectory << "# step x y z v_x v_y v_z f_x f_y f_z Ek Ep\n";
   }
-  void recordForces(
-    const std::vector<double>* f_x,
-    const std::vector<double>* f_y,
-    const std::vector<double>* f_z) {
-    m_f_x = f_x;
-    m_f_y = f_y;
-    m_f_z = f_z;
-  }
-  // void recordAtomGroup(const AtomGroup* atom_group) {
-  //   m_atom_group = atom_group;
-  // }
+  void recordForces(const double3& f) {m_forces = f;}
+  void recordVelocities(const double3& v) {m_velocities = v;}
+  void recordPositions(const double3& r) {m_positions = r;}
   void recordKineticEnergy(const double& Ek) {m_kineticEnergy = Ek;}
   void recordPotentialEnergy(const double& Ep) {m_potentialEnergy = Ep;}
   void recordStep(const int64_t& step) {m_step = step;}
   void report() {
-    if (m_step % m_stride == 0) {
-      m_ofs_trajectory << fmt::format(" {:>10d} ", m_step);
-      if (m_f_x && m_f_y && m_f_z) {
-        for (size_t i = 0; i < m_atom_group.m_num_atoms; ++i) {
-          m_ofs_trajectory << fmt::format(
-            "{:12.5e} {:12.5e} {:12.5e} "
-            "{:12.5e} {:12.5e} {:12.5e} "
-            "{:12.5e} {:12.5e} {:12.5e} ",
-            m_atom_group.m_pos_x[i],
-            m_atom_group.m_pos_y[i],
-            m_atom_group.m_pos_z[i],
-            m_atom_group.m_vel_x[i],
-            m_atom_group.m_vel_y[i],
-            m_atom_group.m_vel_z[i],
-            (*m_f_x)[i], (*m_f_y)[i], (*m_f_z)[i]);
-        }
-      }
-      m_ofs_trajectory << fmt::format("{:12.5e} {:12.5e}\n", m_kineticEnergy, m_potentialEnergy);
-    }
+    if (m_step % m_stride == 0)
+      m_ofs_trajectory << fmt::format(" {:>15d} {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
+                                      " {:15.10f} {:15.10f} {:15.10f} {:15.10f}"
+                                      " {:15.10f} {:15.10f} {:15.10f}\n", m_step,
+                                      m_positions.x, m_positions.y, m_positions.z,
+                                      m_velocities.x, m_velocities.y, m_velocities.z,
+                                      m_forces.x, m_forces.y, m_forces.z,
+                                      m_kineticEnergy, m_potentialEnergy);
   }
 };
 

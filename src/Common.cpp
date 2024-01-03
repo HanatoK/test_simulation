@@ -22,79 +22,79 @@ double beta(double temperature) {
   return 1.0 / (temperature * boltzmann_constant);
 }
 
-// double3& double3::operator+=(const double3& rhs) {
-//   this->x += rhs.x;
-//   this->y += rhs.y;
-//   this->z += rhs.z;
-//   return *this;
-// }
-//
-// double3& double3::operator-=(const double3& rhs) {
-//   this->x -= rhs.x;
-//   this->y -= rhs.y;
-//   this->z -= rhs.z;
-//   return *this;
-// }
-//
-// double3& double3::operator*=(const double3& rhs) {
-//   this->x *= rhs.x;
-//   this->y *= rhs.y;
-//   this->z *= rhs.z;
-//   return *this;
-// }
-//
-// double3& double3::operator*=(const double& rhs) {
-//   this->x *= rhs;
-//   this->y *= rhs;
-//   this->z *= rhs;
-//   return *this;
-// }
-//
-// double3& double3::operator/=(const double& rhs) {
-//   this->x /= rhs;
-//   this->y /= rhs;
-//   this->z /= rhs;
-//   return *this;
-// }
-//
-// double3 operator+(double3 lhs, const double3& rhs) {
-//   lhs += rhs;
-//   return lhs;
-// }
-//
-// double3 operator-(double3 lhs, const double3& rhs) {
-//   lhs -= rhs;
-//   return lhs;
-// }
-//
-// double3 operator*(double3 lhs, const double3& rhs) {
-//   lhs *= rhs;
-//   return lhs;
-// }
-//
-// double3 operator*(const double& lhs, double3 rhs) {
-//   rhs *= lhs;
-//   return rhs;
-// }
-//
-// double3 operator*(double3 lhs, const double& rhs) {
-//   lhs *= rhs;
-//   return lhs;
-// }
-//
-// double3 operator/(double3 lhs, const double& rhs) {
-//   lhs /= rhs;
-//   return lhs;
-// }
-//
-// double3 double3::exp(const double3 lhs) {
-//   return double3{std::exp(lhs.x), std::exp(lhs.y), std::exp(lhs.z)};
-// }
-//
-// double3 double3::sqrt(const double3 lhs) {
-//   return double3{std::sqrt(lhs.x), std::sqrt(lhs.y), std::sqrt(lhs.z)};
-// }
-//
-// double3 operator/(const double& lhs, double3 rhs) {
-//   return double3{lhs / rhs.x, lhs / rhs.y, lhs / rhs.z};
-// }
+double3& double3::operator+=(const double3& rhs) {
+  this->x += rhs.x;
+  this->y += rhs.y;
+  this->z += rhs.z;
+  return *this;
+}
+
+double3& double3::operator-=(const double3& rhs) {
+  this->x -= rhs.x;
+  this->y -= rhs.y;
+  this->z -= rhs.z;
+  return *this;
+}
+
+double3& double3::operator*=(const double3& rhs) {
+  this->x *= rhs.x;
+  this->y *= rhs.y;
+  this->z *= rhs.z;
+  return *this;
+}
+
+double3& double3::operator*=(const double& rhs) {
+  this->x *= rhs;
+  this->y *= rhs;
+  this->z *= rhs;
+  return *this;
+}
+
+double3& double3::operator/=(const double& rhs) {
+  this->x /= rhs;
+  this->y /= rhs;
+  this->z /= rhs;
+  return *this;
+}
+
+double3 operator+(double3 lhs, const double3& rhs) {
+  lhs += rhs;
+  return lhs;
+}
+
+double3 operator-(double3 lhs, const double3& rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+
+double3 operator*(double3 lhs, const double3& rhs) {
+  lhs *= rhs;
+  return lhs;
+}
+
+double3 operator*(const double& lhs, double3 rhs) {
+  rhs *= lhs;
+  return rhs;
+}
+
+double3 operator*(double3 lhs, const double& rhs) {
+  lhs *= rhs;
+  return lhs;
+}
+
+double3 operator/(double3 lhs, const double& rhs) {
+  lhs /= rhs;
+  return lhs;
+}
+
+double3 double3::exp(const double3 lhs) {
+  return double3{std::exp(lhs.x), std::exp(lhs.y), std::exp(lhs.z)};
+}
+
+double3 double3::sqrt(const double3 lhs) {
+  return double3{std::sqrt(lhs.x), std::sqrt(lhs.y), std::sqrt(lhs.z)};
+}
+
+double3 operator/(const double& lhs, double3 rhs) {
+  return double3{lhs / rhs.x, lhs / rhs.y, lhs / rhs.z};
+}

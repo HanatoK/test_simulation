@@ -12,54 +12,27 @@ const int64_t total_steps = 300000000;
 
 // gamma_x == gamma_y
 void BiasedSimulations1BD() {
-  const size_t num_atoms = 1;
-  AtomGroup atoms(num_atoms, std::vector<double>(num_atoms, mass));
-  atoms.m_pos_x[0] = -2.0;
-  atoms.m_pos_y[0] = -2.0;
-  atoms.m_pos_z[0] = 0.0;
   // setup bias
   std::vector<Axis> ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   std::vector<Axis> mtd_ax{Axis(-7, 7, 280), Axis(-7, 7, 280)};
   BiasWTMeABF bias(ax, mtd_ax, 0.1, 300.0 * 0.0019872041 / (0.05 * 0.05), 300.0, 8.0, timestep);
   HarmonicWalls restraint({-7.0, -7.0}, {7.0, 7.0}, 8000.0);
-  Reporter reporter(100, atoms, "BD_XYZ_10_10_b.traj");
+  Reporter reporter(100, "BD_XYZ_10_10_b.traj");
   std::ofstream ofs_restraint_traj("restraint_10_10.dat");
-  ofs_restraint_traj << fmt::format("#{:>10s} {:>12s} {:>12s} {:>12s}\n", "step", "x", "y", "restraint_energy");
+  ofs_restraint_traj << "# step x y restraint_energy\n";
   std::ofstream ofs_bias_traj("bias_10_10.dat");
-  ofs_bias_traj << fmt::format("#{:>10s} ", "step")
-                << fmt::format("{:>12s} {:>12s} ", "x", "y")
-                << fmt::format("{:>12s} {:>12s} ", "r_x", "r_y")
-                << fmt::format("{:>12s} {:>12s}\n", "fb_rx", "fb_ry");
+  ofs_bias_traj << "# step x y r_x r_y fb_rx fb_ry\n";
   std::ofstream ofs_hill_traj("bias_10_10.hills");
-  ofs_hill_traj << fmt::format("#{:>10s} ", "step")
-                << fmt::format("{:>12s} {:>12s} ", "x", "y")
-                << fmt::format("{:>12s} {:>12s} ", "sigma_x", "sigma_y")
-                << fmt::format("{:>12s}\n", "hill_h");
+  ofs_hill_traj << "# step x y sigma_x sigma_y height\n";
   BSPotential potential(2.0, 2.2, 1.0 / (300.0 * 0.0019872041));
-  Simulation simulation(atoms, 300.0);
-  // double3 frictions{10.0, 10.0, 10.0};
+  Simulation simulation(mass, 300.0, double3{-2.0, -2.0, 0.0});
+  double3 frictions{10.0, 10.0, 10.0};
   // simulation.initializeVelocities();
-  const std::vector<double> friction_x(num_atoms, 10.0);
-  const std::vector<double> friction_y(num_atoms, 10.0);
-  const std::vector<double> friction_z(num_atoms, 10.0);
   simulation.runBrownianDynamics(
-      total_steps, timestep, friction_x, friction_y, friction_z,
-      [&potential](const std::vector<double>& __restrict pos_x,
-                   const std::vector<double>& __restrict pos_y,
-                   const std::vector<double>& __restrict pos_z,
-                   std::vector<double>& __restrict f_x,
-                   std::vector<double>& __restrict f_y,
-                   std::vector<double>& __restrict f_z) {
-                     potential.getForces(pos_x, pos_y, pos_z, f_x, f_y, f_z);
-                   },
-      [&potential](const std::vector<double>& __restrict pos_x,
-                   const std::vector<double>& __restrict pos_y,
-                   const std::vector<double>& __restrict pos_z) {
-                     return potential.getPotential(pos_x, pos_y, pos_z);
-                   },
-      [&](std::vector<double>& __restrict f_x,
-          std::vector<double>& __restrict f_y,
-          std::vector<double>& __restrict f_z){
+      total_steps, timestep, frictions,
+      [&](const double3& r){return potential.getForces(r);},
+      [&](const double3& r){return potential.getPotential(r);},
+      [&](double3& f){
         // apply the biasing force (backward)
         std::vector<double> bias_force(ax.size(), 0);
         // the MTD hill and other biasing forces to the extended system is updated here
@@ -69,18 +42,16 @@ void BiasedSimulations1BD() {
         bias.applyBiasForce(bias_force);
         // add restraint force
         const auto& restraint_force = restraint.force();
-        f_x[0] += bias_force[0] + restraint_force[0];
-        f_y[0] += bias_force[1] + restraint_force[1];
-        reporter.recordForces(&f_x, &f_y, &f_z);
+        f.x += bias_force[0] + restraint_force[0];
+        f.y += bias_force[1] + restraint_force[1];
+        reporter.recordForces(f);
       },
       // [&](const double3& v){reporter.recordVelocities(v);},
-      [&](const std::vector<double>& __restrict pos_x,
-          const std::vector<double>& __restrict pos_y,
-          const std::vector<double>& __restrict pos_z){
-        // reporter.recordPositions(r);
+      [&](const double3& r){
+        reporter.recordPositions(r);
         // update CVs (forward) and collect CZAR
-        bias.updateCV({pos_x[0], pos_y[0]});
-        restraint.update_value({pos_x[0], pos_y[0]});
+        bias.updateCV({r.x, r.y});
+        restraint.update_value({r.x, r.y});
       },
       // [&](const double& Ek){reporter.recordKineticEnergy(Ek);},
       [&](const double& Ep){reporter.recordPotentialEnergy(Ep);},
@@ -93,7 +64,7 @@ void BiasedSimulations1BD() {
         bias.writeOutput("bias_10_10_step");
         const auto step = simulation.getStep();
         if (step % 100 == 0) {
-          ofs_restraint_traj << fmt::format(" {:>10d} {:12.5e} {:12.5e}\n",
+          ofs_restraint_traj << fmt::format("  {:>15d} {:15.10f} {:15.10f}\n",
                                             step, fmt::join(restraint.position(), " "), restraint.energy());
         }
         reporter.report();
